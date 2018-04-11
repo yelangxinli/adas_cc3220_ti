@@ -1,0 +1,15 @@
+*.o
+*.pbi
+*.pbd
+*.pbd.browse
+*.wst
+*.wsdt
+*.dep
+*/Debug/
+ccs_base/
+install_logs/
+uniflash_4.2.1/
+uninstallers/
+xdctools_3_50_02_20_core/
+simplelink_cc32xx_sdk_1_40_01_00/
+!simplelink_cc32xx_sdk_1_40_01_00/examples/rtos/CC3220S_LAUNCHXL/demos/network_terminal
