@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<iarUserArgVars>
+    <group name="variable" active="true">
+        <variable>
+            <name>SIMPLELINK_CC32XX_SDK_INSTALL_DIR</name>
+            <value>c:\ti\simplelink_cc32xx_sdk_1_40_01_00</value>
+        </variable>
+        <variable>
+            <name>FREERTOS_INSTALL_DIR</name>
+            <value>c:\ti\simplelink_cc32xx_sdk_1_40_01_00\kernel_Install</value>
+        </variable>
+    </group>
+</iarUserArgVars>
