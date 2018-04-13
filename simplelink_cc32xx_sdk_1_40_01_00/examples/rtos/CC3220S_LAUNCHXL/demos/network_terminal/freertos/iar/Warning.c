@@ -26,7 +26,7 @@
 #define TP_DEV_VER			0x08  //MCU设备号序列号
 #define TP_DELAY			0x09  //延时(单位ms)
 #define TP_WORK_TIME		0x0A  //测试持续时间
-#define TP_DVR_KEY			0x0B  
+#define TP_DVR_KEY			0x0B
 #define TP_SWITCH_VIDEO		0x0C  //切换图像
 #define TP_FPGA_VER			0x0D  //FPGA设备序列号
 #define TP_RESOLUTION		0x0E  //图像分辨率
@@ -54,29 +54,29 @@ long FileHandle_Warn_Stat_Today;
 long FileHandle_Warn_Stat_Index;
 extern unsigned int Config_timeUpdateFlag;
 
-typedef struct{
-  unsigned char head[16];
-  unsigned char TLV_DAY_STAT[784];
-}WARN_DAY_STAT;
+typedef struct {
+	unsigned char head[16];
+	unsigned char TLV_DAY_STAT[784];
+} WARN_DAY_STAT;
 
 static WARN_DAY_STAT WARN_DAY_STAT_TODAY;
 static WARN_DAY_STAT WARN_DAY_STAT_RESP;
-unsigned char* p_WARN_DAY_STAT_TODAY = WARN_DAY_STAT_TODAY.head;
-unsigned char* p_WARN_DAY_STAT_RESP = WARN_DAY_STAT_RESP.head;
+unsigned char *p_WARN_DAY_STAT_TODAY = WARN_DAY_STAT_TODAY.head;
+unsigned char *p_WARN_DAY_STAT_RESP = WARN_DAY_STAT_RESP.head;
 
 struct eventRecord {
 	double longitude;
 	double latitude;
-	int type;	
+	int type;
 	int desc;
 };
 
-struct hourRecord{
+struct hourRecord {
 	unsigned int count[7];
 	unsigned int reserved;
 };
 
-struct dayStatHead{
+struct dayStatHead {
 	unsigned int date;
 	char ver;
 	char reserver;
@@ -85,32 +85,32 @@ struct dayStatHead{
 	char reservered[6];
 };
 
-struct dayRecord{
+struct dayRecord {
 	unsigned int day;
 	unsigned int count[7];
 };
-typedef struct{
-    int year;
-    int month;
-    int day;
-    int hour;
-    int minute;
-    int second;
-    int weekdays;
+typedef struct {
+	int year;
+	int month;
+	int day;
+	int hour;
+	int minute;
+	int second;
+	int weekdays;
 } my_tm;
 extern my_tm tm;
 struct mcuHeader {
-  unsigned int startflag;
-  unsigned int crc32;
-  unsigned short len;
-  unsigned char     serviceType;
-  unsigned char     messageType;
-  unsigned int reserve;
+	unsigned int startflag;
+	unsigned int crc32;
+	unsigned short len;
+	unsigned char     serviceType;
+	unsigned char     messageType;
+	unsigned int reserve;
 };
-struct typeLen{
-  unsigned short type;
-  unsigned short length;
-//	char *valuep;
+struct typeLen {
+	unsigned short type;
+	unsigned short length;
+	//	char *valuep;
 };
 #define MAXDAY 365
 //Warning type
@@ -123,7 +123,7 @@ struct typeLen{
 #define WT_HMW			6
 
 struct hourRecord dayStat[24];
-unsigned char *pStat24Hour = (unsigned char*)dayStat;
+unsigned char *pStat24Hour = (unsigned char *)dayStat;
 struct dayRecord monthStat[MAXDAY];
 int lastDate = -1;
 int dayfd = -1;
@@ -139,100 +139,88 @@ static int emergency_brake = 0;
 static int hmw = 0;
 int checkSystemTime()
 {
-		
+
 }
 
 int checkFCW(char *warndata, struct eventRecord *recordp)
 {
-  if ((warndata[0] & 0xC0)==0xC0)
-  {
-    if (fcw == 0)
-    {
-      recordp->type = WT_FCW;
-      fcw = 1;
-      return 1;
-    }
-  } 
-  else 
-    fcw = 0;
-  return 0;
+	if ((warndata[0] & 0xC0) == 0xC0) {
+		if (fcw == 0) {
+			recordp->type = WT_FCW;
+			fcw = 1;
+			return 1;
+		}
+	} else {
+		fcw = 0;
+	}
+	return 0;
 }
 
 int checkUFCW(char *warndata, struct eventRecord *recordp)
 {
-  if ((warndata[0] & 0xC0)==0x80)
-  {
-    if (ufcw == 0)
-    {
-      recordp->type = WT_UFCW;
-      ufcw = 1;
-      return 1;
-    }
-  }
-  else 
-    ufcw = 0;
-  return 0;
+	if ((warndata[0] & 0xC0) == 0x80) {
+		if (ufcw == 0) {
+			recordp->type = WT_UFCW;
+			ufcw = 1;
+			return 1;
+		}
+	} else {
+		ufcw = 0;
+	}
+	return 0;
 }
 
 int checkPCW(char *warndata, struct eventRecord *recordp)
 {
-  if ((warndata[0] & 0x8)>0)
-  {
-    if (pcw == 0)
-    {
-      recordp->type = WT_PCW;
-      pcw = 1;
-      return 1;
-    }
-  } 
-  else 
-    pcw = 0;
-  return 0;
+	if ((warndata[0] & 0x8) > 0) {
+		if (pcw == 0) {
+			recordp->type = WT_PCW;
+			pcw = 1;
+			return 1;
+		}
+	} else {
+		pcw = 0;
+	}
+	return 0;
 }
 
 int checkLDW(char *warndata, struct eventRecord *recordp)
 {
-  if ((warndata[0] & 0x20)>0)
-  {
-    if (ldwl == 0)
-    {
-      recordp->type = WT_LDW_LEFT;
-      ldwl = 1;
-      return 1;
-    }
-  } 
-  else 
-    ldwl = 0;
-  
-  if ((warndata[0] & 0x10)> 0) 
-  {
-    if (ldwr == 0)
-    {
-      recordp->type = WT_LDW_RIGHT;
-      ldwr = 1;
-      return 1;
-    }
-  }
-  else
-    ldwr = 0;
-  return 0;
+	if ((warndata[0] & 0x20) > 0) {
+		if (ldwl == 0) {
+			recordp->type = WT_LDW_LEFT;
+			ldwl = 1;
+			return 1;
+		}
+	} else {
+		ldwl = 0;
+	}
+
+	if ((warndata[0] & 0x10) > 0) {
+		if (ldwr == 0) {
+			recordp->type = WT_LDW_RIGHT;
+			ldwr = 1;
+			return 1;
+		}
+	} else {
+		ldwr = 0;
+	}
+	return 0;
 }
-	
+
 int checkSpeeding(char *warndata, struct eventRecord *recordp)
 {
-  if ((warndata[0] & 0x2) > 0) 
-  {
-    if (speeding == 0)
-    {
-      recordp->type = WT_OVER_SPEED;
-      recordp->desc = warndata[2];
-      speeding = 1;
-      return 1;
-    }
-  }
-  else 
-    speeding = 0;
-  return 0;
+	if ((warndata[0] & 0x2) > 0) {
+		if (speeding == 0) {
+			recordp->type = WT_OVER_SPEED;
+			recordp->desc = warndata[2];
+			speeding = 1;
+			return 1;
+		}
+	} else {
+		speeding = 0;
+	}
+	return 0;
 }
 
 int checkHMW(char *warndata, struct eventRecord *recordp)
@@ -242,34 +230,33 @@ int checkHMW(char *warndata, struct eventRecord *recordp)
 
 int checkEmergencyBrake(char *warndata, struct eventRecord *recordp)
 {
-  if ((warndata[0] & 0x1) > 0) 
-  {
-    if (emergency_brake == 0)
-    {
-      emergency_brake= 1;
-      return 1;
-    }
-  }
-  else 
-    emergency_brake= 0;
-  return 0;
+	if ((warndata[0] & 0x1) > 0) {
+		if (emergency_brake == 0) {
+			emergency_brake = 1;
+			return 1;
+		}
+	} else {
+		emergency_brake = 0;
+	}
+	return 0;
 }
 
 
 int checkTakePhoto(char *warndata)
 {
 	//if ((warndata[0] & 0x89) > 0)
-  if ((warndata[0] & 0x01) > 0)
-    return 1;
-  else 
-    return 0;
+	if ((warndata[0] & 0x01) > 0) {
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
 void updateDayStat(struct eventRecord record)
 {
-  dayStat[tm.hour].count[record.type] += 1;
+	dayStat[tm.hour].count[record.type] += 1;
 }
 
 void takePhoto()
@@ -294,10 +281,10 @@ void takePhoto()
 	tlp = (struct typeLen *)(buf + 0x10);
 	tlp->type = TP_DVR_KEY;
 	tlp->length = 6;
-	buf[0x14] = key;	
+	buf[0x14] = key;
 	buf[0x15] = 1;
-	
-	headp->crc32= GetCrc32(buf+8, len-8);
+
+	headp->crc32 = GetCrc32(buf + 8, len - 8);
 
 	//sendCmd2DVR(buf, len);  .............................
 }
@@ -306,32 +293,38 @@ void takePhoto()
 
 void saveDayStat()
 {
-        unsigned char FileName[10];unsigned long ulToken;unsigned long lRetVal;
-        FileName[0] = ((tm.year%100)/10) + '0';FileName[1] = (tm.year%10) + '0';//年
-        FileName[2] = ((tm.month%100)/10) + '0';FileName[3] = (tm.month%10) + '0';//月
-        FileName[4] = ((tm.day%100)/10) + '0';FileName[5] = (tm.day%10) + '0';//日
-        
-        FileName[6] = '.';FileName[7] = 's';
-        FileName[8] = 'a';FileName[9] = 't';
-        //打开文件
-        long lFileHandle = sl_FsOpen(FileName,SL_FS_CREATE|SL_FS_OVERWRITE|SL_FS_CREATE_MAX_SIZE( 1024 ),&ulToken);
+	unsigned char FileName[10]; unsigned long ulToken; unsigned long lRetVal;
+	FileName[0] = ((tm.year % 100) / 10) + '0';
+	FileName[1] = (tm.year % 10) + '0'; //年
+	FileName[2] = ((tm.month % 100) / 10) + '0';
+	FileName[3] = (tm.month % 10) + '0';//月
+	FileName[4] = ((tm.day % 100) / 10) + '0';
+	FileName[5] = (tm.day % 10) + '0'; //日
+
+	FileName[6] = '.'; FileName[7] = 's';
+	FileName[8] = 'a'; FileName[9] = 't';
+	//打开文件
+	long lFileHandle = sl_FsOpen(FileName,
+	                             SL_FS_CREATE | SL_FS_OVERWRITE | SL_FS_CREATE_MAX_SIZE(1024), &ulToken);
 	//write day stat
 	unsigned int len = sizeof(struct hourRecord);
-	for (int i = 0; i < 24; i++)
-        {
-          lRetVal = sl_FsWrite(lFileHandle,i*len,(unsigned char *)&dayStat[i], len);
-          if(lRetVal < 0)
-            Message("\r\n 统计文件写入失败!");
+	for (int i = 0; i < 24; i++) {
+		lRetVal = sl_FsWrite(lFileHandle, i * len, (unsigned char *)&dayStat[i], len);
+		if (lRetVal < 0) {
+			Message("\r\n 统计文件写入失败!");
+		}
 	}
-        lRetVal = sl_FsClose(lFileHandle, 0, 0, 0);
-        if(lRetVal < 0)
-          Message("\r\n 统计文件关闭失败!");
+	lRetVal = sl_FsClose(lFileHandle, 0, 0, 0);
+	if (lRetVal < 0) {
+		Message("\r\n 统计文件关闭失败!");
+	}
 }
 
 void saveWarnStat()
 {
-  if(Config_timeUpdateFlag == 1)
-    saveDayStat();
+	if (Config_timeUpdateFlag == 1) {
+		saveDayStat();
+	}
 	//saveMonthStat();
 }
 static int count = 1000;
@@ -347,11 +340,11 @@ void dealWarning(char *buf, int len)
 
 	//check warning and record to file
 	//update dayStat
-	if (checkFCW(warnData, &record)){
+	if (checkFCW(warnData, &record)) {
 		updateDayStat(record);
-	} 
+	}
 
-	if (checkUFCW(warnData, &record)){
+	if (checkUFCW(warnData, &record)) {
 		updateDayStat(record);
 	}
 
@@ -363,11 +356,11 @@ void dealWarning(char *buf, int len)
 		updateDayStat(record);
 	}
 
-	if (checkSpeeding(warnData, &record)){
+	if (checkSpeeding(warnData, &record)) {
 		updateDayStat(record);
 	}
 
-	if (checkHMW(warnData, &record)){
+	if (checkHMW(warnData, &record)) {
 		updateDayStat(record);
 	}
 
@@ -376,8 +369,8 @@ void dealWarning(char *buf, int len)
 		takePhoto();
 	}
 
-         
-	if (count > 200){
+
+	if (count > 200) {
 		saveWarnStat();
 		count = 0;
 	}
@@ -404,16 +397,16 @@ long openWarningStatFile(unsigned long *ulToken)
         //创建失败
 		return -10;
     }
-    
+
     //
     // write "Old MacDonalds" child song as many times to get just below a 64KB file
     //
-    for (iLoopCnt = 0; 
-            iLoopCnt < (SL_MAX_FILE_SIZE / sizeof(gaucOldMacDonald)); 
+    for (iLoopCnt = 0;
+            iLoopCnt < (SL_MAX_FILE_SIZE / sizeof(gaucOldMacDonald));
             iLoopCnt++)
     {
         lRetVal = sl_FsWrite(lFileHandle,
-                    (unsigned int)(iLoopCnt * sizeof(gaucOldMacDonald)), 
+                    (unsigned int)(iLoopCnt * sizeof(gaucOldMacDonald)),
                     (unsigned char *)gaucOldMacDonald, sizeof(gaucOldMacDonald));
         if (lRetVal < 0)
         {
@@ -423,7 +416,7 @@ long openWarningStatFile(unsigned long *ulToken)
 			return -11;
         }
     }
-    
+
     //
     // close the user file
     //
