@@ -67,7 +67,6 @@ UART_Handle InitTerm(void)
 //! \return count of characters printed
 //
 //*****************************************************************************
-
 int Report(const char *pcFormat, ...)
 {
     int     iRet = 0;

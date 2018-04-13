@@ -61,16 +61,15 @@
 #include "wlan_cmd.h"
 #include "netapp_cmd.h"
 #include "socket_cmd.h"
-#include <hw_types.h>
+#include <ti/devices/cc32xx/inc/hw_types.h>
 #include "transceiver_cmd.h"
-//#include "protocol.h"
-#include <pin.h>
-#include <rom_map.h>
-#include "uart.h"
-#include "hw_uart.h"
-#include <Hw_memmap.h>
-#include <prcm.h>
-//#include <user.h>
+#include <ti/devices/cc32xx/driverlib/pin.h>
+#include <ti/devices/cc32xx/driverlib/rom_map.h>
+#include <ti/devices/cc32xx/driverlib/uart.h>
+#include <ti/devices/cc32xx/inc/hw_uart.h>
+#include <ti/devices/cc32xx/inc/hw_memmap.h>
+#include <ti/devices/cc32xx/driverlib/prcm.h>
+
 #include <ti/drivers/net/wifi/porting/user.h>
 /* Application defines */
 #define SIX_BYTES_SIZE_MAC_ADDRESS  (17)
@@ -932,6 +931,10 @@ void PrintFileListProperty(_u16 prop)
 }
 
 
+
+
+
+    
 
 int Network(void *arg)//wifi with device
 {

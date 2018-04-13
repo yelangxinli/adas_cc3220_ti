@@ -48,21 +48,22 @@
 /* Example/Board Header files */
 #include "Board.h"
 #include "uart_term.h"
-//#include "spi_flash.h"
 #include <ti/drivers/net/wifi/simplelink.h>
-#include <Spi.h>
-#include <rom.h>
-#include <rom_map.h>
-#include <Hw_memmap.h>
-#include <prcm.h>
-#include <hw_mcspi.h>
-#include <hwspinlock.h>
-#include <hw_types.h>
-#include <pin.h>
-#include <gpio.h>
+//#include <Spi.h>
+#include <ti/devices/cc32xx/driverlib/spi.h>
+#include <ti/devices/cc32xx/driverlib/rom.h>
+#include <ti/devices/cc32xx/driverlib/rom_map.h>
+//#include <Hw_memmap.h>
+#include <ti/devices/cc32xx/inc/hw_memmap.h>
+#include <ti/devices/cc32xx/driverlib/prcm.h>
+#include <ti/devices/cc32xx/inc/hw_mcspi.h>
+#include <ti/devices/cc32xx/driverlib/hwspinlock.h>
+#include <ti/devices/cc32xx/inc/hw_types.h>
+#include <ti/devices/cc32xx/driverlib/pin.h>
+#include <ti/devices/cc32xx/driverlib/gpio.h>
 //#include "gpio_if.h"
-#include "uart.h"
-#include "hw_uart.h"
+#include <ti/devices/cc32xx/driverlib/uart.h>
+#include <ti/devices/cc32xx/inc/hw_uart.h>
 
 #define SPI_IF_BIT_RATE  100000
 #define TR_BUFF_SIZE     100
