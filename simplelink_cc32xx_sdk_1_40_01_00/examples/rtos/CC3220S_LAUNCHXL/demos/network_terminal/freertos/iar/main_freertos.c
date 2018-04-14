@@ -34,17 +34,13 @@
  *  ======== main_freertos.c ========
  */
 #include <stdint.h>
-
 /* POSIX Header files */
 #include <pthread.h>
-
 /* RTOS header files */
 #include "FreeRTOS.h"
 #include "task.h"
-
 /* TI-RTOS Header files */
 #include <ti/drivers/GPIO.h>
-
 /* Example/Board Header files */
 #include "Board.h"
 #include "uart_term.h"
@@ -69,12 +65,10 @@
 #define TR_BUFF_SIZE     100
 #define UART_BUF_SIZE    4096
 
-
 extern void Network(void *arg);
 
 /* Stack size in bytes */
 #define THREADSTACKSIZE   4096
-
 
 #define _u8  unsigned char
 #define _i8  signed char
@@ -86,24 +80,21 @@ extern void Network(void *arg);
 #define _volatile volatile
 #define _const    const
 
-
-
-char *paraes_SPI_FLASH_WORK=NULL;
-char *paraes_UART_MCU_CC3220=NULL;
-char *paraesNetwork=NULL;
+char *paraes_SPI_FLASH_WORK = NULL;
+char *paraes_UART_MCU_CC3220 = NULL;
+char *paraesNetwork = NULL;
 //int a , b , c;
-int UART_Print_flg=0;
+int UART_Print_flg = 0;
 unsigned long DeviceID = 0;
 unsigned char reciveData[256];
-unsigned char sendData[]={0xab,0xab,0xab,0xab,0xab};
+unsigned char sendData[] = {0xab, 0xab, 0xab, 0xab, 0xab};
 
-char*           DeviceFileName = "MyFile.txt";
+char           *DeviceFileName = "MyFile.txt";
 unsigned long   MaxSize = 63 * 1024; //62.5K is max file size
 unsigned long   Offset = 0;
 unsigned char   InputBuffer[100];
 
-int sl_start_flag=0;
-
+int sl_start_flag = 0;
 
 UART_Handle uart_1;
 
@@ -124,18 +115,18 @@ TaskHandle_t xHandle_WRITE_FILE_TASK;
 TaskHandle_t netWork;
 
 /* Application specific status/error codes */
-typedef enum{
-    // Choosing this number to avoid overlap w/ host-driver's error codes
-    FILE_ALREADY_EXIST = -0x7D0,
-    FILE_CLOSE_ERROR = FILE_ALREADY_EXIST - 1,
-    FILE_NOT_MATCHED = FILE_CLOSE_ERROR - 1,
-    FILE_OPEN_READ_FAILED = FILE_NOT_MATCHED - 1,
-    FILE_OPEN_WRITE_FAILED = FILE_OPEN_READ_FAILED -1,
-    FILE_READ_FAILED = FILE_OPEN_WRITE_FAILED - 1,
-    FILE_WRITE_FAILED = FILE_READ_FAILED - 1,
+typedef enum {
+	// Choosing this number to avoid overlap w/ host-driver's error codes
+	FILE_ALREADY_EXIST = -0x7D0,
+	FILE_CLOSE_ERROR = FILE_ALREADY_EXIST - 1,
+	FILE_NOT_MATCHED = FILE_CLOSE_ERROR - 1,
+	FILE_OPEN_READ_FAILED = FILE_NOT_MATCHED - 1,
+	FILE_OPEN_WRITE_FAILED = FILE_OPEN_READ_FAILED - 1,
+	FILE_READ_FAILED = FILE_OPEN_WRITE_FAILED - 1,
+	FILE_WRITE_FAILED = FILE_READ_FAILED - 1,
 
-    STATUS_CODE_MAX = -0xBB8
-}e_AppStatusCodes;
+	STATUS_CODE_MAX = -0xBB8
+} e_AppStatusCodes;
 
 //*****************************************************************************
 //                 GLOBAL VARIABLES -- Start
@@ -205,25 +196,23 @@ E-I-E-I-O.";
 
 void PinMuxConfig(void)
 {
-    //
-    // Enable Peripheral Clocks 
-    //
-    //MAP_PRCMPeripheralClkEnable(PRCM_UARTA0, PRCM_RUN_MODE_CLK);
-    //MAP_PRCMPeripheralClkEnable(PRCM_UARTA1, PRCM_RUN_MODE_CLK);
-    PRCMPeripheralClkEnable(PRCM_UARTA1, PRCM_RUN_MODE_CLK);
-    //
-    // Configure PIN_55 for UART0 UART0_TX
-    //
-    //MAP_PinTypeUART(PIN_03, PIN_MODE_7);
-    //MAP_PinTypeUART(PIN_01, PIN_MODE_7);
-    MAP_PinTypeUART(PIN_58, PIN_MODE_6);
+	//
+	// Enable Peripheral Clocks
+	//
+	//MAP_PRCMPeripheralClkEnable(PRCM_UARTA0, PRCM_RUN_MODE_CLK);
+	//MAP_PRCMPeripheralClkEnable(PRCM_UARTA1, PRCM_RUN_MODE_CLK);
+	PRCMPeripheralClkEnable(PRCM_UARTA1, PRCM_RUN_MODE_CLK);
+	//
+	// Configure PIN_55 for UART0 UART0_TX
+	//MAP_PinTypeUART(PIN_03, PIN_MODE_7);
+	//MAP_PinTypeUART(PIN_01, PIN_MODE_7);
+	MAP_PinTypeUART(PIN_58, PIN_MODE_6);
 
-    //
-    // Configure PIN_57 for UART0 UART0_RX
-    //
-    //MAP_PinTypeUART(PIN_04, PIN_MODE_7);
-    //MAP_PinTypeUART(PIN_02, PIN_MODE_7);
-    MAP_PinTypeUART(PIN_59, PIN_MODE_6);
+	//
+	// Configure PIN_57 for UART0 UART0_RX
+	//MAP_PinTypeUART(PIN_04, PIN_MODE_7);
+	//MAP_PinTypeUART(PIN_02, PIN_MODE_7);
+	MAP_PinTypeUART(PIN_59, PIN_MODE_6);
 }
 
 /*
@@ -257,16 +246,16 @@ long WriteFileToDevice(unsigned long *ulToken)
         //创建失败
 		return -10;
     }
-    
+
     //
     // write "Old MacDonalds" child song as many times to get just below a 64KB file
     //
-    for (iLoopCnt = 0; 
-            iLoopCnt < (SL_MAX_FILE_SIZE / sizeof(gaucOldMacDonald)); 
+    for (iLoopCnt = 0;
+            iLoopCnt < (SL_MAX_FILE_SIZE / sizeof(gaucOldMacDonald));
             iLoopCnt++)
     {
         lRetVal = sl_FsWrite(lFileHandle,
-                    (unsigned int)(iLoopCnt * sizeof(gaucOldMacDonald)), 
+                    (unsigned int)(iLoopCnt * sizeof(gaucOldMacDonald)),
                     (unsigned char *)gaucOldMacDonald, sizeof(gaucOldMacDonald));
         if (lRetVal < 0)
         {
@@ -276,7 +265,7 @@ long WriteFileToDevice(unsigned long *ulToken)
 			return -11;
         }
     }
-    
+
     //
     // close the user file
     //
@@ -372,158 +361,67 @@ int interruptFlag = 0;
 int writeIndex = 0;
 int readIndex = 0;
 static int lRetVal = 0;
-#if 0
-unsigned char warningdata[26];
-extern int UDP_Recv_Flag;
-extern int UDP_RUN_Flag;
-extern SlSockAddrIn_t Addr_UDP;
-extern _i16 Sd_UDP;
-void MakeWaringdata2APP()
-{
-  //打包头部
-  warningdata[0]=warningdata[1]=warningdata[2]=warningdata[3]=0xaa;//起始标志
-  warningdata[4]=recvBuffFromMCU[(readIndex +8)%UART_BUF_SIZE];warningdata[5]=recvBuffFromMCU[(readIndex +9)%UART_BUF_SIZE];warningdata[6]=0;//消息长度
-  //响应标志
-  //序列号
-  warningdata[10]=recvBuffFromMCU[(readIndex +10)%UART_BUF_SIZE];warningdata[11]=recvBuffFromMCU[(readIndex + 11)%UART_BUF_SIZE];//服务类型消息类型
-  //if(warningdata[10] == MSG_WARNING_REQ)
-  //{
-    warningdata[8]=warningdata[9]=0;//序列号
-  //}
-  //else
-  //{
-    //warningdata[7] = 2;//回复
-    //warningdata[8]=warningdata[9]=0;//序列号
-  //}
-  //打包体
-  int length = warningdata[4] + warningdata[5]*256;
-  if(length > 16)
-  {
-    for(int i = 16 ; i < length ; i++)
-      warningdata[i] =  recvBuffFromMCU[(readIndex + i)%UART_BUF_SIZE];
-    unsigned int crcValue = GetCrc32(&warningdata[16] , length -16);
-    warningdata[12]=crcValue&0xff;
-    warningdata[13]=(crcValue>>8)&0xff;
-    warningdata[14]=(crcValue>>16)&0xff;
-    warningdata[15]=(crcValue>>24)&0xff;//CRC校验
-  }
-  else if(length == 16)
-  {
-    warningdata[12]=0xbb;
-    warningdata[13]=0xbb;
-    warningdata[14]=0xbb;
-    warningdata[15]=0xbb;//CRC校验
-  }
-  else
-  {
-  
-  }
-}
-#endif
 
 void UARTIntHandler()
 {
-    interruptFlag=1;
-    lRetVal = MAP_UARTIntStatus(UARTA1_BASE, 1);
-    if(lRetVal & UART_INT_OE) //FIFO 溢出中断
-    {
-       MAP_UARTIntClear(UARTA1_BASE, UART_INT_OE);
-     }
-     if(lRetVal & UART_INT_RT) //串口空闲中断，（已使能此中断，但一直不进）
-     {
-       if((writeIndex >= readIndex) && ((writeIndex - readIndex) < UART_BUF_SIZE))
-       {
-         while(UARTCharsAvail(UARTA1_BASE))
-         {
-            recvBuffFromMCU[writeIndex%UART_BUF_SIZE] = MAP_UARTCharGet(UARTA1_BASE);
-            writeIndex++;
-         }
-       }
-     }
-     if(lRetVal & UART_INT_RX) //串口接收中断
-     {
-       while(UARTCharsAvail(UARTA1_BASE))
-       {
-         if((writeIndex >= readIndex) && ((writeIndex - readIndex) < UART_BUF_SIZE))
-         {
-            recvBuffFromMCU[writeIndex%UART_BUF_SIZE] = MAP_UARTCharGet(UARTA1_BASE);
-            writeIndex++;
-         }
-         else
-         {
-            MAP_UARTCharGet(UARTA1_BASE);//丢掉数据
-         }
-         
-       }
-     }
-    MAP_UARTIntClear(UARTA1_BASE, UART_INT_RT|UART_INT_RX|UART_INT_BE|UART_INT_FE);
-    interruptFlag = 0;
+	interruptFlag = 1;
+	lRetVal = MAP_UARTIntStatus(UARTA1_BASE, 1);
+	if (lRetVal & UART_INT_OE) { //FIFO 溢出中断
+		MAP_UARTIntClear(UARTA1_BASE, UART_INT_OE);
+	}
+	if (lRetVal & UART_INT_RT) { //串口空闲中断，（已使能此中断，但一直不进）
+		if ((writeIndex >= readIndex) && ((writeIndex - readIndex) < UART_BUF_SIZE)) {
+			while (UARTCharsAvail(UARTA1_BASE)) {
+				recvBuffFromMCU[writeIndex % UART_BUF_SIZE] = MAP_UARTCharGet(UARTA1_BASE);
+				writeIndex++;
+			}
+		}
+	}
+	if (lRetVal & UART_INT_RX) { //串口接收中断
+		while (UARTCharsAvail(UARTA1_BASE)) {
+			if ((writeIndex >= readIndex) && ((writeIndex - readIndex) < UART_BUF_SIZE)) {
+				recvBuffFromMCU[writeIndex % UART_BUF_SIZE] = MAP_UARTCharGet(UARTA1_BASE);
+				writeIndex++;
+			} else {
+				MAP_UARTCharGet(UARTA1_BASE);//丢掉数据
+			}
+
+		}
+	}
+	MAP_UARTIntClear(UARTA1_BASE,
+	                 UART_INT_RT | UART_INT_RX | UART_INT_BE | UART_INT_FE);
+	interruptFlag = 0;
 }
 
-/*                       
-void UART_MCU_CC3220(void *arg)
-{
-  while(1)
-  {
-    Message("\r\n UART_MCU_CC3220!");
-    
-    if(readIndex < writeIndex)
-      {
-        if((recvBuffFromMCU[readIndex%4096] == 0xcc)&&(recvBuffFromMCU[(readIndex+1)%4096] == 0xcc)&&(recvBuffFromMCU[(readIndex+2)%4096] == 0xcc)&&(recvBuffFromMCU[(readIndex+3)%4096] == 0xcc))
-        {
-          if(((writeIndex - readIndex) > 9) && ((writeIndex - readIndex - (recvBuffFromMCU[(readIndex + 8)%4096] + recvBuffFromMCU[(readIndex+9)%4096]*256)) > 0))//有了一针完整的数据
-          {
-            int length = recvBuffFromMCU[(readIndex + 8)%4096] + recvBuffFromMCU[(readIndex+9)%4096]*256;
-            Message("\r\n Received data:");
-            for(int i = readIndex ; i < readIndex + length ; i++)
-              UART_PRINT("%2x,",recvBuffFromMCU[i%4096]&0xff);
-            readIndex = readIndex + length; //移动指针
-            vTaskDelay(30);
-          }
-        }
-        else
-          readIndex++;//移动指针
-      }
-    
-    //vTaskDelay(30);
-  }
-}
-*/
-/*
- *  ======== main ========
- */
 TaskHandle_t netWork;
 int main(void)
 {
-    /* Call board init functions */
-    //Board_initGeneral();
-    //Board_initGPIO();
-    Board_initSPI();
-    //UART_init();
-    PinMuxConfig();
-    InitTerm();
-    xTaskCreate(Network,"network",1024,(void *)&paraesNetwork,4,&netWork);
-    
-    
-    char *paraes_UDP_TASK=NULL;
-    xTaskCreate(UDP_TASK,"UDP_TASK",1024,(void *)&paraes_UDP_TASK,2,&xHandle_UDP_TASK);
-    
-    char *paraes_TCP_TASK=NULL;
-    xTaskCreate(TCP_TASK,"TCP_TASK",1024,(void *)&paraes_TCP_TASK,3,&xHandle_TCP_TASK);
-    
-    char *paraes_WRITE_FILE_TASK=NULL;
-    xTaskCreate(WRITE_FILE_TASK,"WRITE_FILE_TASK",1024,(void *)&paraes_WRITE_FILE_TASK,3,&xHandle_WRITE_FILE_TASK);
-    
-    
-    /* Start the FreeRTOS scheduler */
-    vTaskStartScheduler();
-    
-    while(1)
-    {
-      Message("\r\n main process!");
-    }
-    
-    return (0);
+	char *paraes_UDP_TASK = NULL;
+	char *paraes_TCP_TASK = NULL;
+	char *paraes_WRITE_FILE_TASK = NULL;
+
+	/* Call board init functions */
+	//Board_initGeneral();
+	//Board_initGPIO();
+	Board_initSPI();
+	//UART_init();
+	PinMuxConfig();
+	InitTerm();
+	xTaskCreate(Network, "network", 1024, (void *)&paraesNetwork, 4, &netWork);
+	xTaskCreate(UDP_TASK, "UDP_TASK", 1024, (void *)&paraes_UDP_TASK, 2,
+	            &xHandle_UDP_TASK);
+	xTaskCreate(TCP_TASK, "TCP_TASK", 1024, (void *)&paraes_TCP_TASK, 3,
+	            &xHandle_TCP_TASK);
+	xTaskCreate(WRITE_FILE_TASK, "WRITE_FILE_TASK", 1024,
+	            (void *)&paraes_WRITE_FILE_TASK, 3, &xHandle_WRITE_FILE_TASK);
+
+	/* Start the FreeRTOS scheduler */
+	vTaskStartScheduler();
+	while (1) {
+		Message("\r\n main process!");
+	}
+
+	return (0);
 }
 
 //*****************************************************************************
@@ -537,10 +435,9 @@ int main(void)
 //*****************************************************************************
 void vApplicationMallocFailedHook()
 {
-    /* Handle Memory Allocation Errors */
-    while(1)
-    {
-    }
+	/* Handle Memory Allocation Errors */
+	while (1) {
+	}
 }
 
 //*****************************************************************************
@@ -554,21 +451,20 @@ void vApplicationMallocFailedHook()
 //*****************************************************************************
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
 {
-    //Handle FreeRTOS Stack Overflow
-    while(1)
-    {
-    }
+	//Handle FreeRTOS Stack Overflow
+	while (1) {
+	}
 }
 
 void vApplicationTickHook(void)
 {
-    /*
-     * This function will be called by each tick interrupt if
-     * configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h.  User code can be
-     * added here, but the tick hook is called from an interrupt context, so
-     * code must not attempt to block, and only the interrupt safe FreeRTOS API
-     * functions can be used (those that end in FromISR()).
-     */
+	/*
+	 * This function will be called by each tick interrupt if
+	 * configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h.  User code can be
+	 * added here, but the tick hook is called from an interrupt context, so
+	 * code must not attempt to block, and only the interrupt safe FreeRTOS API
+	 * functions can be used (those that end in FromISR()).
+	 */
 }
 
 void vPreSleepProcessing(uint32_t ulExpectedIdleTime)
@@ -588,7 +484,7 @@ void vPreSleepProcessing(uint32_t ulExpectedIdleTime)
 void
 vApplicationIdleHook(void)
 {
-    /* Handle Idle Hook for Profiling, Power Management etc */
+	/* Handle Idle Hook for Profiling, Power Management etc */
 }
 
 //*****************************************************************************
@@ -602,7 +498,7 @@ vApplicationIdleHook(void)
 //!
 //*****************************************************************************
 #if defined (__GNUC__)
-void * _sbrk ( uint32_t delta )
+void *_sbrk(uint32_t delta)
 {
 	extern char _end; /* Defined by the linker */
 	extern char __HeapLimit;
@@ -610,16 +506,16 @@ void * _sbrk ( uint32_t delta )
 	static char *heap_limit;
 	char *prev_heap_end;
 
-  if (heap_end == 0) {
-    heap_end = &_end;
-    heap_limit = &__HeapLimit;
-  }
+	if (heap_end == 0) {
+		heap_end = &_end;
+		heap_limit = &__HeapLimit;
+	}
 
-  prev_heap_end = heap_end;
-  if (prev_heap_end+delta > heap_limit) {
-	  return (void *) -1L;
-  }
-  heap_end += delta;
-  return (void *) prev_heap_end;
+	prev_heap_end = heap_end;
+	if (prev_heap_end + delta > heap_limit) {
+		return (void *) - 1L;
+	}
+	heap_end += delta;
+	return (void *) prev_heap_end;
 }
 #endif

@@ -264,7 +264,7 @@ extern int Length_sendDatabyWIFI;
 extern int UART_Print_flg;
 extern int sl_start_flag;
 extern void SPI_FLASH_WORK(void *arg);
-extern void UART_MCU_CC3220(void *arg);
+//extern void UART_MCU_CC3220(void *arg);
 
 extern unsigned char *p_WARN_DAY_STAT_TODAY;
 extern unsigned char *p_WARN_DAY_STAT_RESP;
@@ -668,7 +668,6 @@ int RestartSimplink()
 	/* initilize the realtime clock */
 	clock_settime(CLOCK_REALTIME, &ts);
 
-
 	/* Create the sl_Task internal spawn thread */
 	pthread_attr_init(&pAttrs_spawn);
 	priParam.sched_priority = SPAWN_TASK_PRIORITY;
@@ -945,38 +944,26 @@ void PrintFileListProperty(_u16 prop)
 
 int Network(void *arg)//wifi with device
 {
-	unsigned char serviceType = 0xff;
-	unsigned char messageType = 0xff; _i16 Ret_UDP_Send = 0;
-	_i16 recv_Length = 0; int i = 0; unsigned int FileLength = 0;
-	unsigned int crcValue; unsigned char *temp; unsigned int count = 0;
-	unsigned int while_count = 0; int length = 0;
-	unsigned int second_from_1970_1_1;
-	unsigned int year = 0; unsigned int month = 0; unsigned int day = 0;
-	unsigned int hour; unsigned int minute; unsigned int second;
-	_i16 Sd_UDP_TMP;
+	unsigned char serviceType = 0xff, messageType = 0xff; 
+	_i16 Ret_UDP_Send = 0,Sd_UDP_TMP, recv_Length = 0;
+	unsigned char *temp; 
+	int length = 0, i = 0;
+	unsigned int FileLength = 0, crcValue,count = 0, while_count = 0; 
+	unsigned int second_from_1970_1_1, year = 0, month = 0, day = 0, hour, minute, second;
+	unsigned long ulToken;
 	SlSockAddrIn_t Addr_UDP_TMP;
+	
 	RestartSimplink();
 
-	unsigned long ulToken;
 	//WriteFileToDevice(&ulToken);
 	//ReadFileFromDevice(ulToken);
-
 	//Send_suggested_response();
-
 	//读取配置文件
-
-
 	//取得当天文件名称
 	//打开当天统计文件，获得handle
-
 	//UART1 串口接收，中断配置
-
-
-
 	readConfigFile(TokenConfig);  //读取配置文件
-
 	Get_Statistics_FileList();
-
 	sl_FsDel("781118.sat", 0);
 
 	MAP_UARTConfigSetExpClk(UARTA1_BASE, MAP_PRCMPeripheralClockGet(PRCM_UARTA1),
@@ -996,8 +983,6 @@ int Network(void *arg)//wifi with device
 
 	//while(1)
 	{
-
-
 		//创建UDP socket
 		Sd_UDP = sl_Socket(SL_AF_INET, SL_SOCK_DGRAM, 0);
 		if (Sd_UDP < 0) {
@@ -1018,7 +1003,6 @@ int Network(void *arg)//wifi with device
 		}
 
 		TCP_RUN_Flag = 1;
-
 
 		//char *paraes_RAW_TASK=NULL;
 		//xTaskCreate((TaskFunction_t)RAW_TASK,"RAW_TASK",1024,(void *)&paraes_RAW_TASK,1,&xHandle_RAW_TASK);
@@ -1098,10 +1082,8 @@ int Network(void *arg)//wifi with device
 				UART1_STATE = 0;
 
 			}
-
 #endif
 			while_count++;
-
 			if (readIndex < writeIndex) {
 				if ((recvBuffFromMCU[readIndex % UART_BUF_SIZE] == 0xcc)
 				    && (recvBuffFromMCU[(readIndex + 1) % UART_BUF_SIZE] == 0xcc)
@@ -1328,10 +1310,8 @@ int Network(void *arg)//wifi with device
 										case MSG_PARA_SET_RESP:
 											Message("\r\n MCU写参数回复!");
 											break;
-
 										case MSG_PARA_GET_TIME_RESP:                  //获取时间回复
 											//Message("\r\n 获取时间回复!");
-
 											if (Config_timeUpdateFlag == 1) {
 												if (CheckCRC(&recvBuffFromMCU[readIndex % UART_BUF_SIZE])) {
 													second_from_1970_1_1 = recvBuffFromMCU[(readIndex + 16 + 4) % UART_BUF_SIZE] +
@@ -1340,9 +1320,7 @@ int Network(void *arg)//wifi with device
 													                       recvBuffFromMCU[(readIndex + 16 + 7) % UART_BUF_SIZE] * 256 * 256 * 256;
 													//UART_PRINT("\n\r total second = %d",second_from_1970_1_1);
 													gettime(second_from_1970_1_1);
-
 													//移动文件列表
-
 													Date_temp_str[0] = (tm.year % 1000) / 10 + '0';
 													Date_temp_str[1] = (tm.year % 1000) % 10 + '0';
 													Date_temp_str[2] = tm.month / 10 + '0'; Date_temp_str[3] = tm.month % 10 + '0';
@@ -1354,7 +1332,6 @@ int Network(void *arg)//wifi with device
 															for (int n = 0; n < 6; n++) {
 																Statistics_FileList[m + 1][n] = Statistics_FileList[m][n];
 															}
-
 														}
 														for (int n = 0; n < 6; n++) {
 															Statistics_FileList[0][n] = Date_temp_str[n];
@@ -1362,7 +1339,6 @@ int Network(void *arg)//wifi with device
 													}
 
 													//比较获取的日期，与配置文件中的日期，若日期更改则关闭文件并重新打开新文件，文件名为当天日期
-
 													unsigned char FileName[6];
 													FileName[0] = ((tm.year % 100) / 10) + '0';
 													FileName[1] = (tm.year % 10) + '0'; //年
@@ -1374,7 +1350,6 @@ int Network(void *arg)//wifi with device
 													if ((ConfigBuf[0] == FileName[0]) && (ConfigBuf[1] == FileName[1])
 													    && (ConfigBuf[2] == FileName[2]) && (ConfigBuf[3] == FileName[3])
 													    && (ConfigBuf[4] == FileName[4]) && (ConfigBuf[5] == FileName[5])) {
-
 													} else {
 														ConfigBuf[0] = FileName[0];
 														ConfigBuf[1] = FileName[1];
@@ -1395,27 +1370,21 @@ int Network(void *arg)//wifi with device
 										case MSG_WARNING_REQ:
 											if (CheckCRC(&recvBuffFromMCU[readIndex % UART_BUF_SIZE])) {
 												//统计
-
 												dealWarning(&recvBuffFromMCU[readIndex % UART_BUF_SIZE],
 												            recvBuffFromMCU[(readIndex + 8) % UART_BUF_SIZE] + recvBuffFromMCU[(readIndex +
 												                    9) % UART_BUF_SIZE] * 256);
-
 												//上报APP 报警数据
 												SendBuff2APP[7] = 0;
 												//Message("\n\r APP报警报文1:");
 												//for(i = 0 ; i < SendBuff2APP[4] + SendBuff2APP[5]*256 ; i++)
 												//UART_PRINT("%02x ",SendBuff2APP[i]);
-
 												ChangeUartData2WifiData();
-
-
 												if (UDP_Recv_Flag == 1) {
 													for (i = 0; i < device_Connect_num ; i++) {
 														if (heartbeat_Time_sencond_from_1970[i] != 0) {
 															Ret_UDP_Send = sl_SendTo(Sd_UDP, SendBuff2APP,
 															                         SendBuff2APP[4] + SendBuff2APP[5] * 256, 0, (SlSockAddr_t *)&Addr_UDP[i],
 															                         sizeof(SlSockAddr_t));
-
 															if (Ret_UDP_Send < 0) {
 																Message("\r\n 报警上传失败!");
 															} else {
@@ -1429,14 +1398,10 @@ int Network(void *arg)//wifi with device
 												}
 											}
 											break;
-
 										case MSG_WARNING_DAY_STAT_RESP:
-
 											break;
 										}
-									}
-
-									else if (serviceType == SERVICE_HEARTBEAT) {      //心跳服务
+									}else if (serviceType == SERVICE_HEARTBEAT) {      //心跳服务
 										Message("\r\n MCU心跳服务!");
 									} else if (serviceType == SERVICE_CMD) {          //命令服务
 										Message("\r\n MCU命令服务!");
@@ -1476,9 +1441,7 @@ int Network(void *arg)//wifi with device
 												}
 											}
 
-
 											Message("\r\n MSG_CMD_RESET_ME_REQ");
-
 											RESET_ME_resp.Head[0] = RESET_ME_resp.Head[0] = RESET_ME_resp.Head[0] =
 											                            RESET_ME_resp.Head[0] = 0xaa; //头
 											RESET_ME_resp.Head[4] = recvBuffFromMCU[(readIndex + 8) % UART_BUF_SIZE];
@@ -1486,7 +1449,6 @@ int Network(void *arg)//wifi with device
 											RESET_ME_resp.Head[6] = 0; RESET_ME_resp.Head[7] = 2;
 											RESET_ME_resp.Head[8] = 0; RESET_ME_resp.Head[9] = 0;
 											RESET_ME_resp.Head[10] = SERVICE_CMD; RESET_ME_resp.Head[11] = MSG_CMD_TEST_REQ;
-
 											temp = &RESET_ME_resp.Head[16];
 											for (i = 16; i < RESET_ME_resp.Head[4] + RESET_ME_resp.Head[5] * 256; i++) {
 												temp[i] = recvBuffFromMCU[(readIndex + i) % UART_BUF_SIZE];
@@ -1498,8 +1460,6 @@ int Network(void *arg)//wifi with device
 											RESET_ME_resp.Head[14] = (crcValue >> 16) & 0xff;
 											RESET_ME_resp.Head[15] = (crcValue >> 24) & 0xff;
 											RESET_ME_resp.RESET_ME_RESP_rdy = 1;
-
-
 											break;
 										case MSG_CMD_RESET_DVR_RESP:
 											ChangeUartData2WifiData();
@@ -1553,7 +1513,6 @@ int Network(void *arg)//wifi with device
 											}
 											break;
 										case MSG_CMD_TEST_REQ :
-
 											Message("\r\n MSG_CMD_TEST_REQ");
 											TEST_CMD_resp.Head[0] = TEST_CMD_resp.Head[0] = TEST_CMD_resp.Head[0] =
 											                            TEST_CMD_resp.Head[0] = 0xaa; //头
@@ -1567,23 +1526,19 @@ int Network(void *arg)//wifi with device
 											for (i = 16; i < TEST_CMD_resp.Head[4] + TEST_CMD_resp.Head[5] * 256; i++) {
 												temp[i] = recvBuffFromMCU[(readIndex + i) % UART_BUF_SIZE];
 											}
-
 											//CRC
 											crcValue = GetCrc32(TEST_CMD_resp.TP_WORK_TIME, 8);
 											TEST_CMD_resp.Head[12] = crcValue & 0xff;
 											TEST_CMD_resp.Head[13] = (crcValue >> 8) & 0xff;
 											TEST_CMD_resp.Head[14] = (crcValue >> 16) & 0xff;
 											TEST_CMD_resp.Head[15] = (crcValue >> 24) & 0xff;
-
 											TEST_CMD_resp.Ready = 1;
-
 											break;
 										}
 									} else if (serviceType == SERVICE_DVR) {    //行车记录仪服务
 										switch (messageType) {
 										case MSG_DVR_FILE_LIST_REQ :            //获取文件列表，如视频文件列表，照片列表
 											Message("\r\n 获取到文件列表");
-
 											DVR_FILE_LIST_resp.head[0] = DVR_FILE_LIST_resp.head[1] =
 											                                 DVR_FILE_LIST_resp.head[2] = DVR_FILE_LIST_resp.head[3] = 0xaa;
 											DVR_FILE_LIST_resp.head[4] = recvBuffFromMCU[(readIndex + 8) % UART_BUF_SIZE];
@@ -1599,7 +1554,6 @@ int Network(void *arg)//wifi with device
 												temp[i] = recvBuffFromMCU[(readIndex + i + 16) % UART_BUF_SIZE];
 											}
 											DVR_FILE_LIST_resp.DVR_FILE_LIST_RES_RDY = 1;
-
 											crcValue = GetCrc32(DVR_FILE_LIST_resp.TP_DVR_FILE_TYPE,
 											                    DVR_FILE_LIST_resp.head[4] + DVR_FILE_LIST_resp.head[5] * 256 - 16);
 											DVR_FILE_LIST_resp.head[12] = crcValue & 0xff;
@@ -1607,14 +1561,12 @@ int Network(void *arg)//wifi with device
 											DVR_FILE_LIST_resp.head[14] = (crcValue >> 16) & 0xff;
 											DVR_FILE_LIST_resp.head[15] = (crcValue >> 24) & 0xff;
 											//temp = DVR_FILE_LIST_resp.head;
-
 											break;
 										}
 									} else if (serviceType == SERVICE_DEBUG) {        //调试服务
 										switch (messageType) {
 										case DEBUG_MCU_COMMAND:
 											Message("\r\n MCU调试服务!");
-
 											DEBUG_CMD_resp.Head[0] = DEBUG_CMD_resp.Head[1] = DEBUG_CMD_resp.Head[2] =
 											                             DEBUG_CMD_resp.Head[3] = 0xaa; //头
 											DEBUG_CMD_resp.Head[4] = recvBuffFromMCU[(readIndex + 8) % UART_BUF_SIZE];
@@ -1625,12 +1577,9 @@ int Network(void *arg)//wifi with device
 											DEBUG_CMD_resp.Head[11] = DEBUG_MCU_COMMAND;
 
 											unsigned char *temp = DEBUG_CMD_resp.Head;
-
-
 											for (i = 16; i < DEBUG_CMD_resp.Head[4] + DEBUG_CMD_resp.Head[5] * 256; i++) {
 												temp[i] = recvBuffFromMCU[(readIndex + i) % UART_BUF_SIZE];
 											}
-
 											crcValue = GetCrc32(DEBUG_CMD_resp.TP_DEBUG_CMD, 24);
 											DEBUG_CMD_resp.Head[12] = crcValue & 0xff;
 											DEBUG_CMD_resp.Head[13] = (crcValue >> 8) & 0xff;
@@ -1638,9 +1587,7 @@ int Network(void *arg)//wifi with device
 											DEBUG_CMD_resp.Head[15] = (crcValue >> 24) & 0xff;
 											DEBUG_CMD_resp.ready = 1;
 											Message("\r\n DEBUG_CMD_resp.ready = 1!");
-
 										}
-
 									} else {
 										//error
 									}
@@ -1648,7 +1595,6 @@ int Network(void *arg)//wifi with device
 									//UART_PRINT("\n\rwriteIndex = %d,readIndex=%d",writeIndex,readIndex);
 									vTaskDelay(1);
 								}
-
 								if ((writeIndex - readIndex) >= UART_BUF_SIZE) {
 									readIndex++;
 								}
