@@ -1,64 +1,44 @@
-#include <stdint.h>
+#include "gettime.h"
 
-/* POSIX Header files */
-#include <pthread.h>
 
-/* RTOS header files */
-#include "FreeRTOS.h"
-#include "task.h"
-
-/* TI-RTOS Header files */
-#include <ti/drivers/GPIO.h>
-
-/* Example/Board Header files */
-#include "Board.h"
-
-#include <ti/drivers/net/wifi/simplelink.h>
-#include <ti/devices/cc32xx/driverlib/spi.h>
-#include <ti/devices/cc32xx/driverlib/rom.h>
-#include <ti/devices/cc32xx/driverlib/rom_map.h>
-#include <ti/devices/cc32xx/inc/hw_memmap.h>
-#include <ti/devices/cc32xx/driverlib/prcm.h>
-#include <ti/devices/cc32xx/inc/hw_mcspi.h>
-#include <ti/devices/cc32xx/driverlib/hwspinlock.h>
-#include <ti/devices/cc32xx/inc/hw_types.h>
-#include <ti/devices/cc32xx/driverlib/pin.h>
-#include <ti/devices/cc32xx/driverlib/gpio.h>
-#include <ti/devices/cc32xx/driverlib/uart.h>
-#include <ti/devices/cc32xx/inc/hw_uart.h>
-
-#include <stdlib.h>
-
-/* Example/Board Header files */
-#include "network_terminal.h"
-#include "cmd_parser.h"
-#include "wlan_cmd.h"
-#include "netapp_cmd.h"
-#include "socket_cmd.h"
-#include "transceiver_cmd.h"
-
-//#include <user.h>
-#include <ti/drivers/net/wifi/porting/user.h>
-/* Application defines */
-#define SIX_BYTES_SIZE_MAC_ADDRESS  (17)
-
-typedef struct {
-	int year;
-	int month;
-	int day;
-	int hour;
-	int minute;
-	int second;
-	int weekdays;
-} my_tm;
-my_tm tm;
 unsigned int days_in_current_year;
-#define         get_TIME       0
-#define         set_TIME        1
+my_tm tm;
+appControlBlock     app_CB;
+
+SlDateTime_t dateTime = {0};
+_u8 pConfigOpt = SL_DEVICE_GENERAL_DATE_TIME; _u16 pConfigLen;
+SlDeviceVersion_t ver;
+
+static cmdAction_t gCmdList[] = {
+	/* command */                /* Command callback */        /* Print Usage */
+	/* Show help          */  { helpStr,              cmdHelpCallback,              printHelpUsage             },
+	/* Scan               */  { scanStr,              cmdScanCallback,              printScanUsage             },
+	/* Set Scan Policy    */  { setPolicyStr,         cmdSetPolicyCallback,         printSetPolicyUsage        },
+	/* Connect            */  { wlanConnectStr,       cmdWlanConnectCallback,       printWlanConnectUsage      },
+	/* Ap start           */  { ap_start_str,         cmdWlanStartApCallback,       printWlanStartApUsage      },
+	/* Ap stop            */  { ap_stop_str,          cmdWlanStopApCallback,        printWlanStopApUsage       },
+	/* Disconnect         */  { wlanDisconnectStr,    cmdWlanDisconnectCallback,    printWlanDisconnectUsage   },
+	/* Connected Stations */  { ConnectedStationsStr, cmdConnectedStationsCallback, printConnectedStationsUsage},
+	/* Ping               */  { pingStr,              cmdPingCallback,              printPingUsage             },
+	/* Send               */  { sendStr,              cmdSendCallback,              printSendUsage             },
+	/* Recv               */  { recvStr,              cmdRecvCallback,              printRecvUsage             },
+	/* Create Filter      */  { createFilterStr,      cmdCreateFilterCallback,      printCreateFilterUsage     },
+	/* Enable Filter      */  { enableFilterStr,      cmdEnableFilterCallback,      printEnableFilterUsage     },
+	/* Disable Filter     */  { disableFilterStr,     cmdDisableFilterCallback,     printDisableFilterUsage    },
+	/* Delete Filter      */  { deleteFilterStr,      cmdDeleteFilterCallback,      printDeleteFilterUsage     },
+	/* WoWlan Enable      */  { enableWoWLANStr,      cmdEnableWoWLANCallback,      printEnableWoWLANUsage     },
+	/* mDNS Advertise     */  { mDNSAdvertiseStr,     mDNSAdvertiseCallback,        printmDNSAdvertiseUsage    },
+	/* mDNS Query         */  { mDNSQueryStr,         mDNSQueryCallback,            printmDNSQueryUsage        },
+	/* Transceiver mode   */  { radiotool_Str,        cmdTranceiverModecallback,    printTranceiverModeUsage   },
+	/* P2P start          */  { p2pStartcmdStr,       cmdP2PModecallback,           printP2PStartUsage         },
+	/* P2P stop           */  { p2pStopcmdStr,        cmdP2PStopcallback,           printP2PStopUsage          },
+	/* Clear term         */  { clearStr,             cmdClearcallback,             printClearUsage            }
+};
+static uint32_t gMaxCmd = (sizeof(gCmdList) / sizeof(cmdAction_t));
 
 static int isleap(int year)
 {
-	return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+	return (year % 4 == 0 && year % 100 != 0 )|| (year % 400 == 0);
 }
 
 int get_yeardays(int year)
@@ -145,11 +125,6 @@ int calc_sec1970(int Y, int M, int D, int h, int m, int s)
 	return sec;
 }
 
-
-SlDateTime_t dateTime = {0};
-_u8 pConfigOpt = SL_DEVICE_GENERAL_DATE_TIME; _u16 pConfigLen;
-SlDeviceVersion_t ver;
-
 void Get_Set_Time(unsigned char OP_CODE)
 {
 	_i16 ret = 0;
@@ -184,85 +159,7 @@ void getDeviceTime()
 	if (ret < 0) {
 		//error
 	}
-	ret = sl_DeviceGet(SL_DEVICE_GENERAL, &pConfigOpt, &pConfigLen,
-	                   (_u8 *)(&dateTime));
-	if (ret < 0) {
-		//error
-	}
-	ret = sl_DeviceGet(SL_DEVICE_GENERAL, &pConfigOpt, &pConfigLen,
-	                   (_u8 *)(&dateTime));
-	if (ret < 0) {
-		//error
-	}
-	ret = sl_DeviceGet(SL_DEVICE_GENERAL, &pConfigOpt, &pConfigLen,
-	                   (_u8 *)(&dateTime));
-	if (ret < 0) {
-		//error
-	}
-	ret = sl_DeviceGet(SL_DEVICE_GENERAL, &pConfigOpt, &pConfigLen,
-	                   (_u8 *)(&dateTime));
-	if (ret < 0) {
-		//error
-	}
 }
-
-
-
-
-
-/****************************************************************************
-                      GLOBAL VARIABLES
-****************************************************************************/
-
-/*    Command List :
- *
- *    Upon calling 'cmd_prompt()', for every command line the user enters,
- *    This Table gets checked for the appropriate command column,
- *    If command was found, cmd_prompt would dispatch the command callback.
- */
-
-/****************************************************************************
-                      LOCAL FUNCTION PROTOTYPES
-****************************************************************************/
-int32_t showAvailableCmd();
-int32_t cmd_prompt(void *arg);
-int32_t cmdClearcallback(void *arg);
-int32_t printClearUsage(void *arg);
-int32_t cmdHelpCallback(void *arg);
-int32_t printHelpUsage(void *arg);
-int32_t initAppVariables();
-int32_t sem_wait_timeout(sem_t *sem, uint32_t Timeout);
-void   *MainThread(void *arg);
-
-
-cmdAction_t gCmdList[] = {
-	/* command */                /* Command callback */        /* Print Usage */
-	/* Show help          */  { helpStr,              cmdHelpCallback,              printHelpUsage             },
-	/* Scan               */  { scanStr,              cmdScanCallback,              printScanUsage             },
-	/* Set Scan Policy    */  { setPolicyStr,         cmdSetPolicyCallback,         printSetPolicyUsage        },
-	/* Connect            */  { wlanConnectStr,       cmdWlanConnectCallback,       printWlanConnectUsage      },
-	/* Ap start           */  { ap_start_str,         cmdWlanStartApCallback,       printWlanStartApUsage      },
-	/* Ap stop            */  { ap_stop_str,          cmdWlanStopApCallback,        printWlanStopApUsage       },
-	/* Disconnect         */  { wlanDisconnectStr,    cmdWlanDisconnectCallback,    printWlanDisconnectUsage   },
-	/* Connected Stations */  { ConnectedStationsStr, cmdConnectedStationsCallback, printConnectedStationsUsage},
-	/* Ping               */  { pingStr,              cmdPingCallback,              printPingUsage             },
-	/* Send               */  { sendStr,              cmdSendCallback,              printSendUsage             },
-	/* Recv               */  { recvStr,              cmdRecvCallback,              printRecvUsage             },
-	/* Create Filter      */  { createFilterStr,      cmdCreateFilterCallback,      printCreateFilterUsage     },
-	/* Enable Filter      */  { enableFilterStr,      cmdEnableFilterCallback,      printEnableFilterUsage     },
-	/* Disable Filter     */  { disableFilterStr,     cmdDisableFilterCallback,     printDisableFilterUsage    },
-	/* Delete Filter      */  { deleteFilterStr,      cmdDeleteFilterCallback,      printDeleteFilterUsage     },
-	/* WoWlan Enable      */  { enableWoWLANStr,      cmdEnableWoWLANCallback,      printEnableWoWLANUsage     },
-	/* mDNS Advertise     */  { mDNSAdvertiseStr,     mDNSAdvertiseCallback,        printmDNSAdvertiseUsage    },
-	/* mDNS Query         */  { mDNSQueryStr,         mDNSQueryCallback,            printmDNSQueryUsage        },
-	/* Transceiver mode   */  { radiotool_Str,        cmdTranceiverModecallback,    printTranceiverModeUsage   },
-	/* P2P start          */  { p2pStartcmdStr,       cmdP2PModecallback,           printP2PStartUsage         },
-	/* P2P stop           */  { p2pStopcmdStr,        cmdP2PStopcallback,           printP2PStopUsage          },
-	/* Clear term         */  { clearStr,             cmdClearcallback,             printClearUsage            }
-};
-
-uint32_t            gMaxCmd = (sizeof(gCmdList) / sizeof(cmdAction_t));
-appControlBlock     app_CB;
 
 /*****************************************************************************
                   Callback Functions
@@ -275,23 +172,17 @@ appControlBlock     app_CB;
     by the host driver / NWP. Here user can implement he's own logic
     for any of these events. This handler is used by 'network_terminal'
     application to show case the following scenarios:
-
     1. Handling connection / Disconnection.
     2. Handling Addition of station / removal.
     3. RX filter match handler.
     4. P2P connection establishment.
-
     \param          pWlanEvent       -   pointer to Wlan event data.
-
     \return         void
-
     \note           For more information, please refer to: user.h in the porting
                     folder of the host driver and the  CC3120/CC3220 NWP programmer's
                     guide (SWRU455) sections 4.3.4, 4.4.5 and 4.5.5.
-
     \sa             cmdWlanConnectCallback, cmdEnableFilterCallback, cmdWlanDisconnectCallback,
                     cmdP2PModecallback.
-
 */
 void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 {
@@ -302,7 +193,6 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 	switch (pWlanEvent->Id) {
 	case SL_WLAN_EVENT_CONNECT: {
 		SET_STATUS_BIT(app_CB.Status, STATUS_BIT_CONNECTION);
-
 		/* Copy new connection SSID and BSSID to global parameters */
 		memcpy(app_CB.CON_CB.ConnectionSSID, pWlanEvent->Data.Connect.SsidName,
 		       pWlanEvent->Data.Connect.SsidLen);
@@ -319,22 +209,17 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 		sem_post(&app_CB.CON_CB.connectEventSyncObj);
 	}
 	break;
-
 	case SL_WLAN_EVENT_DISCONNECT: {
 		SlWlanEventDisconnect_t  *pEventData = NULL;
-
 		CLR_STATUS_BIT(app_CB.Status, STATUS_BIT_CONNECTION);
 		CLR_STATUS_BIT(app_CB.Status, STATUS_BIT_IP_ACQUIRED);
 		CLR_STATUS_BIT(app_CB.Status, STATUS_BIT_IPV6_ACQUIRED);
-
 		/* If ping operation is running, release it. */
 		if (IS_PING_RUNNING(app_CB.Status)) {
 			sem_post(&app_CB.CON_CB.eventCompletedSyncObj);
 			UART_PRINT("\n\rPing failed, since device is no longer connected.\n\r");
 		}
-
 		pEventData = &pWlanEvent->Data.Disconnect;
-
 		/* If the user has initiated 'Disconnect' request,
 		  'reason_code' is SL_WLAN_DISCONNECT_USER_INITIATED */
 		if (SL_WLAN_DISCONNECT_USER_INITIATED == pEventData->ReasonCode) {
@@ -358,12 +243,10 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 		       sizeof(app_CB.CON_CB.ConnectionBSSID));
 	}
 	break;
-
 	case SL_WLAN_EVENT_PROVISIONING_STATUS: {
 		/* Do nothing, this suppress provisioning event is because simplelink is configured to default state. */
 	}
 	break;
-
 	case SL_WLAN_EVENT_STA_ADDED: {
 		memcpy(&(app_CB.CON_CB.ConnectionBSSID), pWlanEvent->Data.STAAdded.Mac,
 		       SL_WLAN_BSSID_LENGTH);
@@ -373,7 +256,6 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 		           app_CB.CON_CB.ConnectionBSSID[4], app_CB.CON_CB.ConnectionBSSID[5]);
 	}
 	break;
-
 	case SL_WLAN_EVENT_STA_REMOVED: {
 		memcpy(&(app_CB.CON_CB.ConnectionBSSID), pWlanEvent->Data.STAAdded.Mac,
 		       SL_WLAN_BSSID_LENGTH);
@@ -386,7 +268,6 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 		       sizeof(app_CB.CON_CB.ConnectionBSSID));
 	}
 	break;
-
 	case SL_WLAN_EVENT_RXFILTER: {
 		SlWlanEventRxFilterInfo_t  *triggred_filter = NULL;
 
@@ -402,16 +283,13 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 		 */
 	}
 	break;
-
 	case SL_WLAN_EVENT_P2P_DEVFOUND: {
 		UART_PRINT("\n\r[WLAN EVENT] P2P Remote device found\n\r");
 		sem_post(&(app_CB.P2P_CB.DeviceFound));
 	}
 	break;
-
 	case SL_WLAN_EVENT_P2P_REQUEST: {
 		UART_PRINT("\n\r[WLAN EVENT] P2P Negotiation request received\n\r");
-
 		/* This information is needed to create connection*/
 		memset(&(app_CB.P2P_CB.p2pPeerDeviceName), '\0',
 		       sizeof(app_CB.P2P_CB.p2pPeerDeviceName));
@@ -422,7 +300,6 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 		sem_post(&app_CB.P2P_CB.RcvNegReq);
 	}
 	break;
-
 	case SL_WLAN_EVENT_P2P_CONNECT: {
 		UART_PRINT("n\r[WLAN EVENT] P2P connection was successfully completed as CLIENT\n\r");
 		UART_PRINT("n\rBSSID is %02x:%02x:%02x:%02x:%02x:%02x\n\r",
@@ -436,7 +313,6 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 		sem_post(&app_CB.P2P_CB.RcvConReq);
 	}
 	break;
-
 	case SL_WLAN_EVENT_P2P_CLIENT_ADDED: {
 		UART_PRINT("n\r[WLAN EVENT] P2P connection was successfully completed as GO\n\r");
 		UART_PRINT("n\rBSSID is %02x:%02x:%02x:%02x:%02x:%02x\n\r",
@@ -450,13 +326,11 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 		sem_post(&app_CB.P2P_CB.RcvConReq);
 	}
 	break;
-
 	case SL_WLAN_EVENT_P2P_DISCONNECT: {
 		UART_PRINT("\n\r[WLAN EVENT] STA disconnected from device.\n\r");
 		CLR_STATUS_BIT(app_CB.Status, STATUS_BIT_CONNECTION);
 	}
 	break;
-
 	default: {
 		UART_PRINT("\n\r[WLAN EVENT] Unexpected event [0x%x]\n\r", pWlanEvent->Id);
 	}
@@ -467,23 +341,17 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pWlanEvent)
 
 /*!
     \brief          SimpleLinkNetAppEventHandler
-
     This handler gets called whenever a Netapp event is reported
     by the host driver / NWP. Here user can implement he's own logic
     for any of these events. This handler is used by 'network_terminal'
     application to show case the following scenarios:
-
     1. Handling IPv4 / IPv6 IP address acquisition.
     2. Handling IPv4 / IPv6 IP address Dropping.
-
     \param          pNetAppEvent     -   pointer to Netapp event data.
-
     \return         void
-
     \note           For more information, please refer to: user.h in the porting
                     folder of the host driver and the  CC3120/CC3220 NWP programmer's
                     guide (SWRU455) section 5.7
-
 */
 void SimpleLinkNetAppEventHandler(SlNetAppEvent_t *pNetAppEvent)
 {
@@ -494,16 +362,12 @@ void SimpleLinkNetAppEventHandler(SlNetAppEvent_t *pNetAppEvent)
 	switch (pNetAppEvent->Id) {
 	case SL_DEVICE_EVENT_DROPPED_NETAPP_IPACQUIRED: {
 		SlIpV4AcquiredAsync_t *pEventData = NULL;
-
 		SET_STATUS_BIT(app_CB.Status, STATUS_BIT_IP_ACQUIRED);
-
 		/* Ip Acquired Event Data */
 		pEventData = &pNetAppEvent->Data.IpAcquiredV4;
 		app_CB.CON_CB.IpAddr = pEventData->Ip ;
-
 		/* Gateway IP address */
 		app_CB.CON_CB.GatewayIP = pEventData->Gateway;
-
 		UART_PRINT("\n\r[NETAPP EVENT] IP set to: IPv4=%d.%d.%d.%d , "
 		           "Gateway=%d.%d.%d.%d\n\r",
 
@@ -520,7 +384,6 @@ void SimpleLinkNetAppEventHandler(SlNetAppEvent_t *pNetAppEvent)
 		sem_post(&(app_CB.CON_CB.ip4acquireEventSyncObj));
 	}
 	break;
-
 	case SL_DEVICE_EVENT_DROPPED_NETAPP_IPACQUIRED_V6: {
 		uint32_t i = 0;
 
@@ -531,37 +394,30 @@ void SimpleLinkNetAppEventHandler(SlNetAppEvent_t *pNetAppEvent)
 		}
 
 		UART_PRINT("\n\r[NETAPP EVENT] IP Acquired: IPv6=");
-
 		for (i = 0; i < 3 ; i++) {
 			UART_PRINT("%04x:%04x:", ((app_CB.CON_CB.Ipv6Addr[i] >> 16) & 0xffff),
 			           app_CB.CON_CB.Ipv6Addr[i] & 0xffff);
 		}
-
 		UART_PRINT("%04x:%04x", ((app_CB.CON_CB.Ipv6Addr[3] >> 16) & 0xffff),
 		           app_CB.CON_CB.Ipv6Addr[3] & 0xffff);
 		UART_PRINT(lineBreak);
 		sem_post(&app_CB.CON_CB.ip6acquireEventSyncObj);
 	}
 	break;
-
 	case SL_DEVICE_EVENT_DROPPED_NETAPP_IP_LEASED: {
 		SET_STATUS_BIT(app_CB.Status, STATUS_BIT_IP_LEASED);
 		SET_STATUS_BIT(app_CB.Status, STATUS_BIT_IP_ACQUIRED);
-
 		app_CB.CON_CB.StaIp = pNetAppEvent->Data.IpLeased.IpAddress;
 		UART_PRINT("\n\r[NETAPP EVENT] IP Leased to Client: IP=%d.%d.%d.%d \n\r",
 		           SL_IPV4_BYTE(app_CB.CON_CB.StaIp, 3), SL_IPV4_BYTE(app_CB.CON_CB.StaIp, 2),
 		           SL_IPV4_BYTE(app_CB.CON_CB.StaIp, 1), SL_IPV4_BYTE(app_CB.CON_CB.StaIp, 0));
-
 		sem_post(&(app_CB.CON_CB.ip4acquireEventSyncObj));
 	}
 	break;
-
 	case SL_DEVICE_EVENT_DROPPED_NETAPP_IP_RELEASED: {
 		UART_PRINT("\n\r[NETAPP EVENT] IP is released.\n\r");
 	}
 	break;
-
 	default: {
 		UART_PRINT("\n\r[NETAPP EVENT] Unexpected event [0x%x] \n\r", pNetAppEvent->Id);
 	}
@@ -575,17 +431,12 @@ void SimpleLinkNetAppEventHandler(SlNetAppEvent_t *pNetAppEvent)
 
     This handler gets called whenever a HTTP event is reported
     by the NWP internal HTTP server.
-
     \param          pHttpEvent       -   pointer to http event data.
-
     \param          pHttpEvent       -   pointer to http response.
-
     \return         void
-
     \note           For more information, please refer to: user.h in the porting
                     folder of the host driver and the  CC3120/CC3220 NWP programmer's
                     guide (SWRU455) chapter 9.
-
 */
 void SimpleLinkHttpServerEventHandler(SlNetAppHttpServerEvent_t *pHttpEvent,
                                       SlNetAppHttpServerResponse_t *pHttpResponse)
@@ -595,19 +446,14 @@ void SimpleLinkHttpServerEventHandler(SlNetAppHttpServerEvent_t *pHttpEvent,
 
 /*!
     \brief          SimpleLinkGeneralEventHandler
-
     This handler gets called whenever a general error is reported
     by the NWP / Host driver. Since these errors are not fatal,
     application can handle them.
-
     \param          pDevEvent    -   pointer to device error event.
-
     \return         void
-
     \note           For more information, please refer to: user.h in the porting
                     folder of the host driver and the  CC3120/CC3220 NWP programmer's
                     guide (SWRU455) section 17.9.
-
 */
 void SimpleLinkGeneralEventHandler(SlDeviceEvent_t *pDevEvent)
 {
@@ -628,11 +474,8 @@ void SimpleLinkGeneralEventHandler(SlDeviceEvent_t *pDevEvent)
 
     This handler gets called whenever a socket event is reported
     by the NWP / Host driver.
-
     \param          SlSockEvent_t    -   pointer to socket event data.
-
     \return         void
-
     \note           For more information, please refer to: user.h in the porting
                     folder of the host driver and the  CC3120/CC3220 NWP programmer's
                     guide (SWRU455) section 7.6.
@@ -645,23 +488,17 @@ void SimpleLinkSockEventHandler(SlSockEvent_t *pSock)
 
 /*!
     \brief          SimpleLinkFatalErrorEventHandler
-
     This handler gets called whenever a socket event is reported
     by the NWP / Host driver. After this routine is called, the user's
     application must restart the device in order to recover.
-
     \param          slFatalErrorEvent    -   pointer to fatal error event.
-
     \return         void
-
     \note           For more information, please refer to: user.h in the porting
                     folder of the host driver and the  CC3120/CC3220 NWP programmer's
                     guide (SWRU455) section 17.9.
-
 */
 void SimpleLinkFatalErrorEventHandler(SlDeviceFatal_t *slFatalErrorEvent)
 {
-
 	switch (slFatalErrorEvent->Id) {
 	case SL_DEVICE_EVENT_FATAL_DEVICE_ABORT: {
 		UART_PRINT("\n\r[ERROR] - FATAL ERROR: Abort NWP event detected: "
@@ -670,31 +507,26 @@ void SimpleLinkFatalErrorEventHandler(SlDeviceFatal_t *slFatalErrorEvent)
 		           slFatalErrorEvent->Data.DeviceAssert.Value);
 	}
 	break;
-
 	case SL_DEVICE_EVENT_FATAL_DRIVER_ABORT: {
 		UART_PRINT("\n\r[ERROR] - FATAL ERROR: Driver Abort detected. \n\r");
 	}
 	break;
-
 	case SL_DEVICE_EVENT_FATAL_NO_CMD_ACK: {
 		UART_PRINT("\n\r[ERROR] - FATAL ERROR: No Cmd Ack detected "
 		           "[cmd opcode = 0x%x] \n\r",
 		           slFatalErrorEvent->Data.NoCmdAck.Code);
 	}
 	break;
-
 	case SL_DEVICE_EVENT_FATAL_SYNC_LOSS: {
 		UART_PRINT("\n\r[ERROR] - FATAL ERROR: Sync loss detected n\r");
 	}
 	break;
-
 	case SL_DEVICE_EVENT_FATAL_CMD_TIMEOUT: {
 		UART_PRINT("\n\r[ERROR] - FATAL ERROR: Async event timeout detected "
 		           "[event opcode =0x%x]  \n\r",
 		           slFatalErrorEvent->Data.CmdTimeout.Code);
 	}
 	break;
-
 	default:
 		UART_PRINT("\n\r[ERROR] - FATAL ERROR: Unspecified error detected \n\r");
 		break;
@@ -703,30 +535,21 @@ void SimpleLinkFatalErrorEventHandler(SlDeviceFatal_t *slFatalErrorEvent)
 
 /*!
     \brief          SimpleLinkNetAppRequestEventHandler
-
     This handler gets called whenever a NetApp event is reported
     by the NWP / Host driver. User can write he's logic to handle
     the event here.
-
     \param          pNetAppRequest     -   Pointer to NetApp request structure.
-
     \param          pNetAppResponse    -   Pointer to NetApp request Response.
-
     \note           For more information, please refer to: user.h in the porting
                     folder of the host driver and the  CC3120/CC3220 NWP programmer's
                     guide (SWRU455) section 17.9.
-
     \return         void
-
 */
 //void SimpleLinkNetAppRequestEventHandler(SlNetAppRequest_t *pNetAppRequest, SlNetAppResponse_t *pNetAppResponse)
 //{
 /* Unused in this application */
 //}
 
-
-
-#define RESPONSE_TEXT "Example text to be displayed in browser"
 void SimpleLinkNetAppRequestEventHandler(SlNetAppRequest_t *pNetAppRequest,
         SlNetAppResponse_t *pNetAppResponse)
 {
@@ -774,38 +597,23 @@ void SimpleLinkNetAppRequestEventHandler(SlNetAppRequest_t *pNetAppRequest,
 }
 
 
-#define RESPONSE_TEXT "Example text part 1 --- "
-#define RESPONSE_TEXT2 "Example text part 2"
-
-
-
 /*!
     \brief          SimpleLinkNetAppRequestMemFreeEventHandler
-
     This handler gets called whenever the NWP is done handling with
     the buffer used in a NetApp request. This allows the use of
     dynamic memory with these requests.
-
     \param          pNetAppRequest     -   Pointer to NetApp request structure.
-
     \param          pNetAppResponse    -   Pointer to NetApp request Response.
-
     \note           For more information, please refer to: user.h in the porting
                     folder of the host driver and the  CC3120/CC3220 NWP programmer's
                     guide (SWRU455) section 17.9.
-
     \return         void
-
 */
 void SimpleLinkNetAppRequestMemFreeEventHandler(uint8_t *buffer)
 {
 	/* Unused in this application */
 }
 
-
-/*****************************************************************************
-                  Local Functions
-*****************************************************************************/
 
 /*!
     \brief          Command Prompt.
@@ -817,34 +625,24 @@ void SimpleLinkNetAppRequestMemFreeEventHandler(uint8_t *buffer)
     (gCmdList) and if found, dispatches the handler.
     If no command is found, appropriate error would be printed to screen.
     This function isn't expected to return.
-
     \param          arg       -   Points to command line buffer.
-
     \return
-
     \sa             GetCmd
-
 */
-
-
-
-
 int32_t cmd_prompt(void *arg)
 {
 	int32_t     lRetVal;
 	uint32_t    i = 0;
 	char        cmdBuffer[(MAX_CMD_NAME_LEN + 5)];
 	char        *token = NULL;
-
 	int flag = 0;
-
+	
 	while (!app_CB.Exit) {
 		UART_PRINT(cmdPromptStr);
-
 		/* Poll UART terminal to receive user command terminated by '/r' */
 		//lRetVal = GetCmd((char *)app_CB.CmdBuffer, CMD_BUFFER_LEN);
 		//app_CB.CmdBuffer[28]='\0';
-		UART_PRINT(app_CB.CmdBuffer);
+		UART_PRINT((const char*)app_CB.CmdBuffer);
 		unsigned char *Cmd = "wlan_ap_start -s \"ADASLeader0000\" -c 2\r";
 		for (int i = 0; i < 39; i++) {
 			app_CB.CmdBuffer[i] = Cmd[i];
@@ -870,7 +668,6 @@ int32_t cmd_prompt(void *arg)
 							break;
 						}
 					}
-
 					if (i >= gMaxCmd) {
 						UART_PRINT(lineBreak);
 						UART_PRINT("No such command\n\r");
@@ -878,11 +675,9 @@ int32_t cmd_prompt(void *arg)
 				}
 			}
 		}
-
 		if (lRetVal == 0) {
 			app_CB.Exit = 1;
 		}
-
 		//vTaskDelay(1000);
 	}
 	return 0 ;
@@ -895,13 +690,9 @@ int32_t cmd_prompt(void *arg)
     (gCmdList) and if found, dispatches the appropriate callback, to
     display it's menu options. If no command is found, appropriate error
     would be printed to screen and list of available commands.
-
     \param          arg       -   Points to command name.
-
     \return         This function shall return 0.
-
     \sa             GetCmd
-
 */
 int32_t cmdHelpCallback(void *arg)
 {
@@ -941,13 +732,9 @@ int32_t cmdHelpCallback(void *arg)
 
 /*!
     \brief          Prints 'help' command help menu.
-
     \param          arg       -   Points to command line buffer.
-
     \return         This function shall return 0.
-
     \sa             cmdHelpCallback
-
 */
 int32_t printHelpUsage(void *arg)
 {
@@ -963,15 +750,10 @@ int32_t printHelpUsage(void *arg)
 
 /*!
     \brief          clear command
-
     This routine clears the command line console screen.
-
     \param          arg       -   Points to command line buffer.
-
     \return         This function shall return 0.
-
     \sa             printClearUsage
-
 */
 int32_t cmdClearcallback(void *arg)
 {
@@ -981,13 +763,9 @@ int32_t cmdClearcallback(void *arg)
 
 /*!
     \brief          Prints 'clear' command help menu.
-
     \param          arg       -   Points to command line buffer.
-
     \return         This function shall return 0.
-
     \sa             cmdClearcallback
-
 */
 int32_t printClearUsage(void *arg)
 {
@@ -1002,26 +780,23 @@ int32_t printClearUsage(void *arg)
 
 /*!
     \brief          Configure SimpleLink to default state.
-
     This routine configures the device to a default state.
     It's important to note that this is one example for a 'restore to default state'
     function, which meet the needs of this application, 'Network Terminal'. User who
     wish to incorporate this function into he's app, must adjust the implementation
     and make sure it meets he's needs.
-
     \return         Upon successful completion, the function shall return 0.
                     In case of failure, this function would return -1.
-
 */
 int32_t  ConfigureSimpleLinkToDefaultState()
 {
-	uint8_t                              ucConfigOpt;
-	uint8_t                              ucPower;
-	int32_t                              RetVal = -1;
+	//uint8_t                              ucConfigOpt;
+	//uint8_t                              ucPower;
+	//int32_t                              RetVal = -1;
 	int32_t                              Mode = -1;
-	uint32_t                             IfBitmap = 0;
-	SlWlanScanParamCommand_t             ScanDefault = {0};
-	SlWlanRxFilterOperationCommandBuff_t RxFilterIdMask = {{0}};
+	//uint32_t                             IfBitmap = 0;
+	//SlWlanScanParamCommand_t             ScanDefault = {0};
+	//SlWlanRxFilterOperationCommandBuff_t RxFilterIdMask = {{0}};
 
 	/* Turn NWP on */
 	Mode = sl_Start(0, 0, 0);
@@ -1126,16 +901,11 @@ int32_t  ConfigureSimpleLinkToDefaultState()
 
 /*!
     \brief          Prints IP address.
-
     This routine prints IP addresses in a dotted decimal
     notation (IPv4) or colon : notation (IPv6)
-
     \param          ip         -   Points to command line buffer.
-
     \param          ipv6       -   Flag that sets if the address is IPv4 or IPv6.
-
     \return         void
-
 */
 void PrintIPAddress(unsigned char ipv6, void *ip)
 {
@@ -1146,14 +916,11 @@ void PrintIPAddress(unsigned char ipv6, void *ip)
 	if (!ip) {
 		return;
 	}
-
 	if (ipv6) {
 		pIPv6 = (uint8_t *) ip;
-
 		for (i = 0; i < 14; i += 2) {
 			UART_PRINT("%02x%02x:", pIPv6[i], pIPv6[i + 1]);
 		}
-
 		UART_PRINT("%02x%02x", pIPv6[i], pIPv6[i + 1]);
 	} else {
 		pIPv4 = (uint32_t *)ip;
@@ -1163,137 +930,16 @@ void PrintIPAddress(unsigned char ipv6, void *ip)
 	return;
 }
 
-/*!
-    \brief          ipv6 Address Parse
 
-    This routine converts string representing IPv6 address
-    in a colon notation, into an array of bytes,
-    representing each IP address octate.
-
-    \param          str         -   Points to string address.
-
-    \param          ipv6ip      -   Points to a 16 byte long array.
-
-    \return         Upon successful completion, the function shall return 0.
-                    In case of failure, this function would return -1.
-
-*/
-/*
-int32_t ipv6AddressParse(char *str, uint8_t *ipv6ip)
-{
-    int32_t         i;
-    int32_t         l;
-    int32_t         zeroCompressPos;
-    uint8_t        *t;
-    uint8_t         tmp[16];
-    uint16_t        value;
-    uint8_t         hexDigit;
-
-    i = 0;
-    t = (uint8_t*)str;
-    value = 0;
-    hexDigit=0;
-    zeroCompressPos=-1;
-    memset(tmp, 0, sizeof(tmp));
-
-    if(*t==':')
-    {
-        if(*++t!=':')
-        {
-            return -1;
-        }
-    }
-
-    while(*t && (i < 16))
-    {
-        if(*t >= '0' && *t <= '9')
-        {
-            value = (value << 4) | (*t - '0');
-            hexDigit = 1;
-        }
-        else if(*t >= 'a' && *t <= 'f')
-        {
-            value = (value << 4) | ((*t - 'a') + 10);
-            hexDigit = 1;
-        }
-        else if(*t >= 'A' && *t <= 'F')
-        {
-            value = (value << 4) | ((*t - 'A') + 10);
-            hexDigit = 1;
-        }
-        else if((*t == ':') && (i < 14))
-        {
-            if(hexDigit)
-            {
-                tmp[i++] = (value >> 8) & 0xFF;
-                tmp[i++] = (value) & 0xFF;
-                hexDigit = 0;
-                value = 0;
-            }
-            else
-            {
-                if(zeroCompressPos < 0)
-                {
-                    zeroCompressPos = i;
-                }
-                else
-                {
-                    return -1;
-                }
-            }
-        }
-        t++;
-    }
-
-    if(i > 15)    return -1;
-    else if(hexDigit && (zeroCompressPos < 0) && (i < 14))    return -1;
-    else if((!hexDigit) && (zeroCompressPos < 0))    return -1;
-    else if((!hexDigit) && (zeroCompressPos != i))    return -1;
-    else if((zeroCompressPos >= 0) && i >= 14)    return -1;
-
-    if((hexDigit) && (i < 14))
-    {
-        tmp[i++] = (value >> 8) & 0xFF;
-        tmp[i++] = (value) & 0xFF;
-        hexDigit = 0;
-        value = 0;
-    }
-
-    if(zeroCompressPos>=0)
-    {
-        i--;
-        l = 15;
-        while(i>=zeroCompressPos)
-        {
-            if ((l >= 0) && (i >= 0))
-            {
-                tmp[l] = tmp[i];
-                tmp[i] = 0;
-                l--;
-                i--;
-            }
-        }
-    }
-
-    memcpy(ipv6ip, tmp, sizeof(tmp));
-
-    return 0;
-}
-*/
 /*!
     \brief          ipv4 Address Parse
-
     This routine converts string representing IPv4 address
     in a dotted decimal notation, into an array of bytes,
     representing each IP address octate.
-
     \param          str         -   Points to string address.
-
     \param          ipv4ip      -   Points to a 4 byte long array.
-
     \return         Upon successful completion, the function shall return 0.
                     In case of failure, this function would return -1.
-
 */
 int32_t ipv4AddressParse(char *str, uint32_t *ipv4ip)
 {
@@ -1325,7 +971,6 @@ int32_t ipv4AddressParse(char *str, uint32_t *ipv4ip)
 			return -1;
 		}
 	}
-
 	*ipv4ip = ipv4Address;
 
 	return 0;
@@ -1333,17 +978,12 @@ int32_t ipv4AddressParse(char *str, uint32_t *ipv4ip)
 
 /*!
     \brief          hex byte string to ASCII
-
     This routine converts a hexadecimal base byte represented
     as a string, into the equivalent ASCII character.
-
     \param          str         -   Points to string Hex.
-
     \param          ascii       -   Points to a buffer containing the converted ASCII char.
-
     \return         Upon successful completion, the function shall return 0.
                     In case of failure, this function would return -1.
-
 */
 int32_t hexbyteStrtoASCII(char *str, uint8_t *ascii)
 {
@@ -1382,38 +1022,30 @@ int32_t hexbyteStrtoASCII(char *str, uint8_t *ascii)
 
 /*!
     \brief          Parse MAC address.
-
     This routine converts a MAC address given in a colon separated
     format in a string form, and converts it to six byte number format,
     representing the MAC address.
-
     \param          str       -   Points to string Hex.
-
     \param          mac       -   Points to a buffer containing the converted ASCII char.
-
     \return         Upon successful completion, the function shall return 0.
                     In case of failure, this function would return -1.
-
 */
 int32_t macAddressParse(char *str, uint8_t *mac)
 {
 
 	int32_t        count = 0;
 	char           *t = NULL;
-	uint8_t        tmp[3];
+	uint8_t        tmp[3]={0};
 	uint8_t        byte = 0;
 	size_t         MAC_length;
 
 	t = (char *)str;
-
 	MAC_length = strlen(t);
 
 	if (MAC_length > SIX_BYTES_SIZE_MAC_ADDRESS) {
 		/* invalid MAC size */
 		return -1;
 	}
-
-	memset(tmp, 0, sizeof(tmp));
 
 	while (byte < 6) {
 		count  = 0;
@@ -1445,17 +1077,12 @@ int32_t macAddressParse(char *str, uint8_t *mac)
 
 /*!
     \brief          GPIO button function callback
-
     This routine gets called whenever board button (SW3 for CC3220
     or S2 for MSP-432) gets pressed. It posts the sleep semaphore,
     in order to wake the device from LPDS.
-
     \param          index    -   Contains the board GPIO index who triggered this function.
-
     \return         void
-
     \sa             cmdEnableWoWLANCallback
-
 */
 void gpioButtonFxn1(uint8_t index)
 {
@@ -1466,16 +1093,12 @@ void gpioButtonFxn1(uint8_t index)
 
 /*!
     \brief          Prints list of available commands.
-
     \return         This function shall return 0.
-
     \sa             cmd_prompt
-
 */
 int32_t showAvailableCmd()
 {
 	uint8_t i = 0;
-
 	printBorder('=', 80);
 	UART_PRINT("\n\rAvailable commands:\n\r");
 
@@ -1569,14 +1192,10 @@ int32_t DisplayAppBanner(char *appName, char *appVersion)
 
 /*!
     \brief          initialize Application's Variables
-
     This routine initialize the application control block.
-
     \return         Upon successful completion, the function shall return 0.
                     In case of failure, this function would return -1.
-
     \sa             MainThread
-
 */
 int32_t    initAppVariables(void)
 {
@@ -1645,19 +1264,13 @@ int32_t    initAppVariables(void)
 
 /*!
     \brief          Semaphore wait Timeout
-
     This routine shows how to to set a timeout while waiting on
     a semaphore for POSIX based OS API.
-
     \param          sem     -   points to a semaphore object.
-
     \param          Timeout -   Timeout in mSec value.
-
     \return         Upon successful completion, the function shall return 0.
                     In case of failure, this function would return negative value.
-
     \sa             sem_timedwait, cmdWlanConnectCallback
-
 */
 int32_t sem_wait_timeout(sem_t *sem, uint32_t Timeout)
 {
@@ -1684,7 +1297,6 @@ int32_t sem_wait_timeout(sem_t *sem, uint32_t Timeout)
 	return sem_timedwait(sem, &abstime);
 }
 
-unsigned char name[18] = "ADASLeader-000000";
 void setSSID()
 {
 	//Get unique MAC Address
@@ -1702,28 +1314,14 @@ void setSSID()
 	{
 
 	}*/
-
+	unsigned char name[18] = "ADASLeader-000000";
 	_u8 macAddressVal[SL_MAC_ADDR_LEN];
 	_u16 macAddressLen = SL_MAC_ADDR_LEN;
 	_u16 ConfigOpt = 0;
 	_i16 Status;
-	char tmp[7];
-	tmp[7] = '\0';
-	name[17] = '\0';
 	sl_NetCfgGet(SL_NETCFG_MAC_ADDRESS_GET, &ConfigOpt, &macAddressLen,
 	             (_u8 *)macAddressVal);
 
-	tmp[0] = macAddressVal[0];
-	tmp[1] = macAddressVal[2];
-	tmp[2] = macAddressVal[4];
-	tmp[3] = '\0';
-	/*
-	tmp[1] = ((macAddressVal[0] >> 4) & 0x0f);
-	tmp[2] = (macAddressVal[2] & 0x0f);
-	tmp[3] = ((macAddressVal[2] >> 4) & 0x0f);
-	tmp[4] = (macAddressVal[4] & 0x0f);
-	tmp[5] = ((macAddressVal[4] >> 4) & 0x0f);
-	*/
 	if (((macAddressVal[0] & 0x0f) <= 9) && ((macAddressVal[0] & 0x0f) >= 0)) {
 		name[11] = (macAddressVal[0] & 0x0f) + 48;
 	} else {
@@ -1763,16 +1361,12 @@ void setSSID()
 		name[16] = ((macAddressVal[4] >> 4) & 0x0f) + 64;
 	}
 
-
-	//else
-	{
-		//Set WIFI Name
-
-		if (Status = sl_WlanSet(SL_WLAN_CFG_AP_ID, SL_WLAN_AP_OPT_SSID, 18, name)) {
-			UART_PRINT("\r\n can not set ssid!");
-		} else {
-			Status = sl_Stop(0);
-			sl_Start(NULL, NULL, NULL);
-		}
+	if (Status = sl_WlanSet(SL_WLAN_CFG_AP_ID, SL_WLAN_AP_OPT_SSID, 18, name)) {
+		UART_PRINT("\r\n can not set ssid!");
+	} else {
+		Status = sl_Stop(0);
+		sl_Start(NULL, NULL, NULL);
 	}
+	
 }
+
