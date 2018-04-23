@@ -11,6 +11,15 @@
 #define DBG_PRINT  Report
 #define ERR_PRINT(x) Report("Error [%d] at line [%d] in function [%s]  \n\r",x,__LINE__,__FUNCTION__)
 
+#define __DEBUG__
+#ifdef __DEBUG__
+#define al_printf(format,...) Report("File:"__FILE__",Line:%05d:"format"\n", __LINE__, ##__VA_ARGS__)
+#else
+#define al_printf(format,...)
+#endif
+
+
+
 /* API */
 
 UART_Handle InitTerm(void);

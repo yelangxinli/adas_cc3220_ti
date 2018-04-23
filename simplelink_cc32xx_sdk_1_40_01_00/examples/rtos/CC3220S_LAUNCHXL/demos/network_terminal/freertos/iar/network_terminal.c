@@ -47,30 +47,10 @@
 
 *****************************************************************************/
 
-/* Standard includes */
-#include <stdlib.h>
-#include <stdint.h>
+#include "gettime.h"
+#include <stdio.h>
 
-/* TI-DRIVERS Header files */
-#include <ti/drivers/net/wifi/simplelink.h>
-#include "FreeRTOS.h"
-#include "task.h"
-/* Example/Board Header files */
-#include "network_terminal.h"
-#include "cmd_parser.h"
-#include "wlan_cmd.h"
-#include "netapp_cmd.h"
-#include "socket_cmd.h"
-#include <ti/devices/cc32xx/inc/hw_types.h>
-#include "transceiver_cmd.h"
-#include <ti/devices/cc32xx/driverlib/pin.h>
-#include <ti/devices/cc32xx/driverlib/rom_map.h>
-#include <ti/devices/cc32xx/driverlib/uart.h>
-#include <ti/devices/cc32xx/inc/hw_uart.h>
-#include <ti/devices/cc32xx/inc/hw_memmap.h>
-#include <ti/devices/cc32xx/driverlib/prcm.h>
 
-#include <ti/drivers/net/wifi/porting/user.h>
 /* Application defines */
 #define SIX_BYTES_SIZE_MAC_ADDRESS  (17)
 
@@ -79,22 +59,12 @@
 #define SUB_WIFI_VER     2
 pthread_t           gSpawn_thread = (pthread_t)NULL;
 
-typedef struct {
-	int year;
-	int month;
-	int day;
-	int hour;
-	int minute;
-	int second;
-	int weekdays;
-} my_tm;
 extern my_tm tm;
-
-void UDP_TASK();//
-void TCP_TASK();
-void TCP_TASK1();//
-
 extern TaskHandle_t netWork;
+
+void UDP_TASK();
+void TCP_TASK();
+void TCP_TASK1();
 
 /****************************************************************************
          all definition in the protocol between simplelinke and APP
@@ -120,7 +90,6 @@ extern void Get_Set_Time(unsigned char OP_CODE);
 
 #define         main_vesion     1
 #define         sub_version     1
-
 
 //extern void Send_suggested_response();
 #define         get_TIME       0
@@ -274,9 +243,6 @@ extern long FileHandle_Warn_Stat_Index;
 extern unsigned char FileName_Warn_Stat_Today[6];//当天报警文件名称
 extern unsigned char FileName_Warn_Stat_Index[6];//按index 文件名称
 extern unsigned char *pStat24Hour;
-
-
-
 
 typedef struct {
 	unsigned char head[16];
@@ -475,7 +441,6 @@ void SendData2MCU()
 	UART1_STATE = 0;
 }
 
-
 /*!
     \brief          Main thread
 
@@ -664,7 +629,6 @@ int RestartSimplink()
 	/* Init Application variables */
 	RetVal = initAppVariables();
 
-
 	/* initilize the realtime clock */
 	clock_settime(CLOCK_REALTIME, &ts);
 
@@ -727,6 +691,7 @@ int RestartSimplink()
 	if (RetVal) {
 		while (1);
 	}
+	return (0);
 }
 
 unsigned long TokenConfig;
@@ -735,10 +700,7 @@ static unsigned char ConfigBuf[256];
 long writeConfigFile(unsigned char *buf, unsigned long ulToken)
 {
 	//记录中最后一日文件名称：配置2：配置3：配置4
-
-
 	long lRetVal = -1;
-	int iLoopCnt = 0;
 	long lFileHandle;
 	lFileHandle = sl_FsOpen((unsigned char *)"CONFIG",
 	                        SL_FS_CREATE | SL_FS_OVERWRITE | SL_FS_CREATE_MAX_SIZE(1024), &ulToken);
@@ -766,17 +728,13 @@ long writeConfigFile(unsigned char *buf, unsigned long ulToken)
 long readConfigFile(unsigned long ulToken)
 {
 	//记录中最后一日文件名称：配置2：配置3：配置4
-
-
 	long lRetVal = -1;
-	int iLoopCnt = 0;
 	long lFileHandle;
 	lFileHandle = sl_FsOpen((unsigned char *)"CONFIG", SL_FS_READ, &ulToken);
 	if (lFileHandle < 0) { //配置文件不存在
 		return -10;
 	} else { //存在配置文件
 		lRetVal = sl_FsRead(lFileHandle, 0, ConfigBuf, sizeof(ConfigContent));
-
 		if ((lRetVal < 0) || (lRetVal != sizeof(ConfigContent)))
 			//if (lRetVal < 0)
 		{
@@ -874,7 +832,6 @@ int Get_Statistics_FileList()
 		UART_PRINT("\r\n %s", Statistics_FileList[j]);
 	}
 
-
 	unsigned char temp_str[6];
 	//排序
 	for (int m = 0; m < Statistics_FileList_Num; m++) {
@@ -935,12 +892,6 @@ void PrintFileListProperty(_u16 prop)
 		printf("Public read,");
 	}
 }
-
-
-
-
-
-
 
 int Network(void *arg)//wifi with device
 {
@@ -1003,86 +954,11 @@ int Network(void *arg)//wifi with device
 		}
 
 		TCP_RUN_Flag = 1;
-
 		//char *paraes_RAW_TASK=NULL;
 		//xTaskCreate((TaskFunction_t)RAW_TASK,"RAW_TASK",1024,(void *)&paraes_RAW_TASK,1,&xHandle_RAW_TASK);
 
 		//消息处理
 		while (1) {
-			//Message("\r\n UART_task begin!");
-			//处理串口信息
-			/*if(while_count%20 == 0)
-			{
-			  if(Config_timeUpdateFlag == 1)
-			  {
-			    //取时间
-			    GET_TIME_REQ.head[0]=GET_TIME_REQ.head[1]=GET_TIME_REQ.head[2]=GET_TIME_REQ.head[3]=0xcc;
-			    GET_TIME_REQ.head[8]=0x1c;GET_TIME_REQ.head[9]=0;
-			    GET_TIME_REQ.head[0x0a]=3;GET_TIME_REQ.head[0x0b]=3;
-			    GET_TIME_REQ.TP_TIME[0]=TP_TIME_ID;GET_TIME_REQ.TP_TIME[1]=0;GET_TIME_REQ.TP_TIME[2]=12;GET_TIME_REQ.TP_TIME[3]=0;
-			    GET_TIME_REQ.TP_TIME[4]=GET_TIME_REQ.TP_TIME[5]=GET_TIME_REQ.TP_TIME[6]=GET_TIME_REQ.TP_TIME[7]=GET_TIME_REQ.TP_TIME[8]=GET_TIME_REQ.TP_TIME[9]=GET_TIME_REQ.TP_TIME[10]=GET_TIME_REQ.TP_TIME[11]=0;
-			    crcValue = GetCrc32(&GET_TIME_REQ.head[8] , 16+12-8);
-			    GET_TIME_REQ.head[4]=crcValue&0xff;
-			    GET_TIME_REQ.head[5]=(crcValue>>8)&0xff;
-			    GET_TIME_REQ.head[6]=(crcValue>>16)&0xff;
-			    GET_TIME_REQ.head[7]=(crcValue>>24)&0xff;
-			    //串口发送
-			    unsigned int times = 0;
-			    while(UART1_STATE == 1)
-			    {
-			      if(times == 30)
-			        break;
-			      Message("\r\n 2");
-			      vTaskDelay(100);
-			    }
-			    unsigned char* temp = GET_TIME_REQ.head;
-
-			    UART1_STATE = 1;
-			    for(i =0; i< 0x1c ;i++)        //头 16 + TLV 86 + 文件长度 Status - 72 -16
-			    {
-			      UARTCharPut(UARTA1_BASE , temp[i]);
-			    }
-			    UART1_STATE = 0;
-			  }
-
-			}
-			*/
-			//if(while_count%9000 == 0)
-			//Message("\r\n heart beat");
-#if  0
-			if (while_count % 160 == 0) {
-				Message("\r\n heart beat");
-				//  Beat Hart
-				beatHeart.head[0] = beatHeart.head[1] = beatHeart.head[2] = beatHeart.head[3] =
-				        0xcc;
-				beatHeart.head[8] = 0x10; beatHeart.head[9] = 0;
-				beatHeart.head[10] = 0x05; beatHeart.head[11] = 0x03;
-				beatHeart.head[12] = 0x00;
-				beatHeart.head[13] = beatHeart.head[14] = beatHeart.head[15] = 0;
-				crcValue = GetCrc32(&beatHeart.head[8], 16 - 8);
-				beatHeart.head[4] = crcValue & 0xff;
-				beatHeart.head[5] = (crcValue >> 8) & 0xff;
-				beatHeart.head[6] = (crcValue >> 16) & 0xff;
-				beatHeart.head[7] = (crcValue >> 24) & 0xff;
-
-				//串口发送
-				unsigned int times = 0;
-				while (UART1_STATE == 1) {
-					if (times >= 30) {
-						break;
-					}
-					Message("\r\n 2");
-					vTaskDelay(100);
-				}
-				unsigned char *temp = beatHeart.head;
-				UART1_STATE = 1;
-				for (i = 0; i < 0x10 ; i++) {  //头 16 + TLV 86 + 文件长度 Status - 72 -16
-					UARTCharPut(UARTA1_BASE, temp[i]);
-				}
-				UART1_STATE = 0;
-
-			}
-#endif
 			while_count++;
 			if (readIndex < writeIndex) {
 				if ((recvBuffFromMCU[readIndex % UART_BUF_SIZE] == 0xcc)
@@ -1103,7 +979,6 @@ int Network(void *arg)//wifi with device
 							if ((writeIndex - readIndex - length) >= 0) { //  有个正确完整的数据帧
 								{
 									//Message("\r\n received one frame data");
-
 									serviceType = recvBuffFromMCU[(readIndex + 10) % UART_BUF_SIZE];
 									messageType = recvBuffFromMCU[(readIndex + 11) % UART_BUF_SIZE];
 									//if(serviceType == SERVICE_WARNING)
@@ -1442,8 +1317,8 @@ int Network(void *arg)//wifi with device
 											}
 
 											Message("\r\n MSG_CMD_RESET_ME_REQ");
-											RESET_ME_resp.Head[0] = RESET_ME_resp.Head[0] = RESET_ME_resp.Head[0] =
-											                            RESET_ME_resp.Head[0] = 0xaa; //头
+											RESET_ME_resp.Head[0] = RESET_ME_resp.Head[1] = RESET_ME_resp.Head[2] =
+											                            RESET_ME_resp.Head[3] = 0xaa; //头
 											RESET_ME_resp.Head[4] = recvBuffFromMCU[(readIndex + 8) % UART_BUF_SIZE];
 											RESET_ME_resp.Head[5] = recvBuffFromMCU[(readIndex + 9) % UART_BUF_SIZE];
 											RESET_ME_resp.Head[6] = 0; RESET_ME_resp.Head[7] = 2;
@@ -1514,8 +1389,8 @@ int Network(void *arg)//wifi with device
 											break;
 										case MSG_CMD_TEST_REQ :
 											Message("\r\n MSG_CMD_TEST_REQ");
-											TEST_CMD_resp.Head[0] = TEST_CMD_resp.Head[0] = TEST_CMD_resp.Head[0] =
-											                            TEST_CMD_resp.Head[0] = 0xaa; //头
+											TEST_CMD_resp.Head[0] = TEST_CMD_resp.Head[1] = TEST_CMD_resp.Head[2] =
+											                            TEST_CMD_resp.Head[3] = 0xaa; //头
 											TEST_CMD_resp.Head[4] = recvBuffFromMCU[(readIndex + 8) % UART_BUF_SIZE];
 											TEST_CMD_resp.Head[5] = recvBuffFromMCU[(readIndex + 9) % UART_BUF_SIZE];
 											TEST_CMD_resp.Head[6] = 0; TEST_CMD_resp.Head[7] = 2;
@@ -1641,7 +1516,7 @@ static bool is_fisrt_pack = true;
 static bool recive_file_is_finished = false; //
 static bool send_file_is_finished = false; //
 static bool is_the_last_pack =
-    false;    // 1 : the last pack , 0 : is not the last pack
+    false;// 1 : the last pack , 0 : is not the last pack
 static unsigned int received_file_length = 0;
 static unsigned int need_receive_file_length = 0;
 static unsigned short receive_Buf_index = 0;
@@ -1654,6 +1529,7 @@ void TCP_TASK()
 	static unsigned int month;
 	static unsigned int day;
 
+	_i16  i16Status=0;
 	int receiveState; unsigned char serviceType = 0xff;
 	unsigned char messageType = 0xff;
 	_i16 recv_Length = 0;
@@ -1669,146 +1545,82 @@ void TCP_TASK()
 	Addr_TCP.sin_port = sl_Htons(6667);
 	Addr_TCP.sin_addr.s_addr = SL_INADDR_ANY;
 
-
 	TimeVal.tv_sec = 5; // Seconds
 	TimeVal.tv_usec = 0; // Microseconds. 10000 microseconds resolution
 	//创建TCP socket
-
-
 	while (TCP_RUN_Flag == 0) {
 		vTaskDelay(20);
 	}
 	while (1) {
 		Sd = sl_Socket(SL_AF_INET, SL_SOCK_STREAM, 0);
 		if (Sd < 0) {
-			Message("\r\n error , can not create TCP socket! ");
-			//continue;
+			al_printf("\r\n error , can not create TCP socket! ");
+			continue;
 		} else {
-			Message("\r\n create TCP socket success!");
+			al_printf("\r\n create TCP socket success!");
 		}
-
-
-		Status = sl_Bind(Sd, (SlSockAddr_t *)&Addr_TCP, sizeof(SlSockAddrIn_t));
-		if (Status) {
+		i16Status = sl_Bind(Sd, (SlSockAddr_t *)&Addr_TCP, sizeof(SlSockAddrIn_t));
+		if (i16Status) {
 			// error
-			Message("\r\n error , bind TCP socket failed!");
-			//continue;
+			al_printf("\r\n error ,bind TCP socket failed!");
+			sl_Close(Sd );
+			continue;
 		} else {
-			Message("\r\n sl_Bind , TCP socket success!");
+			al_printf("\r\n sl_Bind , TCP socket success!");
 		}
 
-		/*
-		SlSockNonblocking_t BlockingOption;
-		BlockingOption.NonBlockingEnabled = 1;
-		Status = sl_SetSockOpt(Sd,SL_SOL_SOCKET,SL_SO_NONBLOCKING,(_u8*)&BlockingOption,sizeof(BlockingOption));
-		if(Status < 0)
-		{
-		    UART_PRINT("[line:%d, error:%d] %s\n\r", __LINE__, Status, SL_SOCKET_ERROR);
-		    sl_Close(Sd);
-		    return;
-		}
-		*/
-
-		Status = sl_SetSockOpt(Sd, SL_SOL_SOCKET, SL_SO_RCVTIMEO, (_u8 *)&TimeVal,
+		i16Status = sl_SetSockOpt(Sd, SL_SOL_SOCKET, SL_SO_RCVTIMEO, (_u8 *)&TimeVal,
 		                       sizeof(TimeVal));
-		if (Status) {
+		if (i16Status) {
 			Message("\r\n error , set rev time out failed");
 		} else {
-			Message("\r\n set rev time out success");
+			//Message("\r\n set rev time out success");
 		}
-		Status = sl_Listen(Sd, 1);
-		if (Status) {
-			// error
-			Message("\r\n error , listen TCP socket failed!");
-			//continue;
+		i16Status = sl_Listen(Sd, 1);
+		if (i16Status) {
+			UART_PRINT("[line:%d, error:%d] %s\n\r", __LINE__, i16Status);
+			//Message("\r\n error , listen TCP socket failed!");
 		} else {
 			Message("\r\n sl_Listen , TCP socket success!");
 		}
 
 		while (1) {
-
 			receiveState = 0; receiveNum = 0; totalPackage = 0; writed_FileLength = 0;
 			while ((ClientSd_TCP = sl_Accept(Sd, (SlSockAddr_t *)&Addr_TCP,
 			                                 &AddrSize)) < 0) {
-				/*
-				Message("\r\n error , Accept TCP socket failed!");
-				UDP_RUN_Flag = 0;
-				sl_Close(ClientSd_TCP);
-				sl_Close(Sd_UDP);
-				//sl_Close(Sd);
-
-
-				retVal = sl_Stop(200);
-				if(retVal < 0)
-				  Message("\r\n error , sl_Stop failed!");
-				else
-				  Message("\r\n sl_Stop success!");
-				//sl_Close(Sd);
-				//RestartSimplink();
-				retVal = sl_Start(0, 0, 0);
-				if(retVal < 0)
-				  Message("\r\n error , sl_Start failed!");
-				else
-				  Message("\r\n sl_Start success!");
-
-				Addr_UDP_TMP.sin_family = SL_AF_INET;
-				Addr_UDP_TMP.sin_port = sl_Htons(6666);
-				Addr_UDP_TMP.sin_addr.s_addr = SL_INADDR_ANY;
-
-				AddrSize = sizeof(SlSockAddrIn_t);
-
-				  //创建UDP socket
-				  Sd_UDP = sl_Socket(SL_AF_INET, SL_SOCK_DGRAM, 0);
-				  if(Sd_UDP < 0)
-				  {
-				    Message("\r\n error , can not create UDP socket! ");
-				    //continue;
-				  }
-				  else
-				    Message("\r\n create UDP socket success!");
-				  Status_UDP = sl_Bind(Sd_UDP, ( SlSockAddr_t *)&Addr_UDP_TMP, sizeof(SlSockAddrIn_t));
-				  if( Status_UDP ) //
-				  {
-				    // error
-				    Message("\r\nsl_Bind , UDP error!");
-				    //continue;
-				  }
-				  else
-				  {
-				    UDP_RUN_Flag = 1;
-				    Message("\r\n sl_Bind , UDP socket success!");
-				  }
-				*/
-				vTaskDelay(200);
-
+				vTaskDelay(200);//sleep
 				break;
 			}
-			Message("\r\n sl_Accept , TCP socket success!");
+			al_printf("\r\n sl_Accept , TCP socket success!");
 			while (receiveState == 0) {
 				//处理 TCP消息
 				//MAP_UARTIntDisable(UARTA1_BASE, UART_INT_RX | UART_INT_RT |
 				//UART_INT_OE | UART_INT_BE | UART_INT_PE | UART_INT_FE);
 				if (receive_Buf_index == 0) {
-					Status = sl_Recv(ClientSd_TCP, RecvBuff_Tcp, 4096, SL_MSG_DONTWAIT);
+					i16Status = sl_Recv(ClientSd_TCP, RecvBuff_Tcp, 4096, SL_MSG_DONTWAIT);
 				} else {
-					Status = sl_Recv(ClientSd_TCP, RecvBuff_Tcp, 4096 - receive_Buf_index,
+					i16Status = sl_Recv(ClientSd_TCP, RecvBuff_Tcp, 4096 - receive_Buf_index,
 					                 SL_MSG_DONTWAIT);
 				}
 				//MAP_UARTIntEnable(UARTA1_BASE,UART_INT_RX);
-				if ((Status < 0) && (SL_ERROR_BSD_EAGAIN != Status)) {
+				if ((SL_ERROR_BSD_EAGAIN == i16Status)) {
+					//need debug
+					UART_PRINT("L:%d",__LINE__);//need_handle---------------------
+					continue;
+				} else if(i16Status < 0) {
+					UART_PRINT("L:%d",__LINE__);//need_handle---------------------
 					receiveState = 1;
 					break;
 				} else {
 					receiveNum++;
 				}
 				recv_Length = Status;
-				if (0 > Status) {
+				if (0 > i16Status) {
 					receiveNum = 1;
-					// error
 					Message("\r\n error , Receive socket failed!");
 					UART_PRINT("\n\r Status = %d", Status);
 					break;
-				} else if (Status > 0) {
+				} else if (i16Status > 0) {
 					//处理消息
 					//Message("\r\nReceive success , TCP!");
 					if (receiveNum == 1) { //从Wifi收到的第一包
@@ -1816,10 +1628,9 @@ void TCP_TASK()
 						messageType = RecvBuff_Tcp[0x0b];
 						//totalPackage = (RecvBuff_Tcp[4] + RecvBuff_Tcp[5]*256 + RecvBuff_Tcp[6]*65536) / 4096 +1;         //包总数
 					}
-
 					if (serviceType == NO_SERVICE) {            //无服务
 						Message("\r\n\r\n\r\n\r\n\r\n\r\n NO_SERVICE!");
-						Status = sl_Send(ClientSd_TCP, RecvBuff_Tcp, 16, 0);
+						i16Status = sl_Send(ClientSd_TCP, RecvBuff_Tcp, 16, 0);
 						receiveState = 1;
 					} else if (serviceType == SERVICE_FILE) {   //文件服务
 						//Message("\r\n 文件服务");
@@ -1829,7 +1640,6 @@ void TCP_TASK()
 							SendBuff_Mcu[0] = SendBuff_Mcu[1] = SendBuff_Mcu[2] = SendBuff_Mcu[3] = 0xcc;
 							SendBuff_Mcu[8] = (16 + 76) % 256; SendBuff_Mcu[9] = (16 + 76) / 256; //消息长度
 							SendBuff_Mcu[10] = RecvBuff_Tcp[10]; SendBuff_Mcu[11] = RecvBuff_Tcp[11];
-
 							//TLV ， TP_FILE_PARA
 							SendBuff_Mcu[16] = TP_FILE_PARA_ID; SendBuff_Mcu[17] = 0;       //Type
 							SendBuff_Mcu[18] = 76; SendBuff_Mcu[19] = 0;       //Length
@@ -1870,7 +1680,6 @@ void TCP_TASK()
 								if (File_Upload_Ctrl.FileDataUpLoad_Flag == 1) {
 									File_Upload_Ctrl.FileDataUpLoad_Flag = 0;            //上传
 
-
 									//Message("文件内容:");
 									unsigned char *temp = File_Upload_Ctrl.FILE_READ_RESP;
 									for (int i = 0; i < File_Upload_Ctrl.FileDataUpLoad_Length ;
@@ -1879,7 +1688,7 @@ void TCP_TASK()
 										UART_PRINT("%02x ", temp[i]);
 									}
 
-									Status = sl_Send(ClientSd_TCP, File_Upload_Ctrl.FILE_READ_RESP,
+									i16Status = sl_Send(ClientSd_TCP, File_Upload_Ctrl.FILE_READ_RESP,
 									                 File_Upload_Ctrl.FileDataUpLoad_Length, 0);
 									if (File_Upload_Ctrl.UpLoad_Over == 1) {
 										File_Upload_Ctrl.UpLoad_Over = 0;
@@ -1953,7 +1762,7 @@ void TCP_TASK()
 
 
 								//文件内容
-								for (i = 0; i < Status - 72 - 16 ;
+								for (i = 0; i < i16Status - 72 - 16 ;
 								     i++, receive_Buf_index++, received_file_length++) {
 									FilePackage.Data[receive_Buf_index] = RecvBuff_Tcp[88 + i];
 									//crcValue = GetCrc32_One(FilePackage.Data[i],crcValue,pos);
@@ -1984,7 +1793,7 @@ void TCP_TASK()
 								FileSendLength_Inc += recv_Length;
 
 								if (send_pack_count == 0) { //第一包
-									for (i = 0; i < Status ; i++, receive_Buf_index++, received_file_length++) {
+									for (i = 0; i < i16Status ; i++, receive_Buf_index++, received_file_length++) {
 										FilePackage.Data[receive_Buf_index] = RecvBuff_Tcp[i];
 									}
 									if ((receive_Buf_index == 4096)
@@ -2008,7 +1817,7 @@ void TCP_TASK()
 								} else if (receive_Buf_index == 0) { //后续包，头
 
 									//文件内容
-									for (int i = 0; i < Status ; i++, receive_Buf_index++, received_file_length++) {
+									for (int i = 0; i < i16Status ; i++, receive_Buf_index++, received_file_length++) {
 										FileFollowPackage.Data[receive_Buf_index] = RecvBuff_Tcp[i];
 									}
 
@@ -2032,7 +1841,7 @@ void TCP_TASK()
 									recive_file_is_finished = false;
 								} else { //后续包尾
 									//文件内容
-									for (int i = 0; i < Status ; i++, receive_Buf_index++, received_file_length++) {
+									for (int i = 0; i < i16Status ; i++, receive_Buf_index++, received_file_length++) {
 										FileFollowPackage.Data[receive_Buf_index] = RecvBuff_Tcp[i];
 									}
 
@@ -2074,16 +1883,13 @@ void TCP_TASK()
 								receiveState = 1;//readIndex = writeIndex;
 								Message("\r\n Write File success!");
 								UART_PRINT("\r\n   CRC 值 = %x", crcValue);
-
-
 								//回复
-								Status = sl_Send(ClientSd_TCP, tcpFileWrite_Resp.head, 16 + 72, 0);
-								if (Status > 0) {
+								i16Status = sl_Send(ClientSd_TCP, tcpFileWrite_Resp.head, 16 + 72, 0);
+								if (i16Status > 0) {
 									Message("\r\n ACK 2 APP success");
 								} else {
 									Message("\r\n ACK 2 APP failed!");
 								}
-
 							}
 							break;
 
@@ -2164,8 +1970,8 @@ void TCP_TASK()
 									UART_PRINT("%02x ", temp[i]);
 								}
 
-								Status = sl_Send(ClientSd_TCP, APP_PARA_READ_resp.head, 120, 0);
-								if (Status > 0) {
+								i16Status = sl_Send(ClientSd_TCP, APP_PARA_READ_resp.head, 120, 0);
+								if (i16Status > 0) {
 									Message("\r\n success , Read Para Resp!");
 								} else {
 									Message("\r\n failed , Read Para Resp!");
@@ -2225,8 +2031,8 @@ void TCP_TASK()
 							SendBuff_Mcu[10] = 3; SendBuff_Mcu[11] = 2;
 							SendBuff_Mcu[12] = SendBuff_Mcu[13] = SendBuff_Mcu[14] = SendBuff_Mcu[15] =
 							        0xbb;
-							Status = sl_Send(ClientSd_TCP, SendBuff_Mcu, 16, 0);
-							if (Status > 0) {
+							i16Status = sl_Send(ClientSd_TCP, SendBuff_Mcu, 16, 0);
+							if (i16Status > 0) {
 								Message("\r\n success , Write Para Resp!");
 							} else {
 								Message("\r\n failed , Write Para Resp!");
@@ -2492,7 +2298,7 @@ void TCP_TASK()
 									}
 								}
 
-								Status = sl_Send(ClientSd_TCP, WARNING_DAY_STAT_resp.head, 16 + 784, 0);
+								i16Status = sl_Send(ClientSd_TCP, WARNING_DAY_STAT_resp.head, 16 + 784, 0);
 							} else if (Date_Index >= 160101) {
 								/*
 								  //打包
@@ -2615,9 +2421,9 @@ void TCP_TASK()
 							length = DVR_FILE_LIST_resp.head[4] + DVR_FILE_LIST_resp.head[5] * 256;
 							UART_PRINT("\n\rlength = %d,", length);
 							if (DVR_FILE_LIST_resp.DVR_FILE_LIST_RES_RDY == 1) {
-								Status = sl_Send(ClientSd_TCP, DVR_FILE_LIST_resp.head,
+								i16Status = sl_Send(ClientSd_TCP, DVR_FILE_LIST_resp.head,
 								                 DVR_FILE_LIST_resp.head[4] + DVR_FILE_LIST_resp.head[5] * 256, 0);
-								if (Status > 0) {
+								if (i16Status > 0) {
 									Message("\r\n success , return file list!");
 								} else {
 									Message("\r\n failed , return file list!");
@@ -2719,9 +2525,9 @@ void TCP_TASK()
 							}
 							//回复wifi
 							if (TEST_CMD_resp.Ready == 1) {
-								Status = sl_Send(ClientSd_TCP, TEST_CMD_resp.Head,
+								i16Status = sl_Send(ClientSd_TCP, TEST_CMD_resp.Head,
 								                 TEST_CMD_resp.Head[4] + TEST_CMD_resp.Head[5] * 256, 0);
-								if (Status > 0) {
+								if (i16Status > 0) {
 									Message("\r\n success , resp test cmd!");
 								} else {
 									Message("\r\n failed , resp test cmd!");
@@ -2772,9 +2578,9 @@ void TCP_TASK()
 							}
 
 							if (RESET_ME_resp.RESET_ME_RESP_rdy == 1) {
-								Status = sl_Send(ClientSd_TCP, RESET_ME_resp.Head,
+								i16Status = sl_Send(ClientSd_TCP, RESET_ME_resp.Head,
 								                 RESET_ME_resp.Head[4] + RESET_ME_resp.Head[5] * 256, 0);
-								if (Status > 0) {
+								if (i16Status > 0) {
 									Message("\r\n success , resp reset me cmd!");
 								} else {
 									Message("\r\n failed , resp reset me cmd!");
@@ -2882,9 +2688,9 @@ void TCP_TASK()
 									}
 									UART1_STATE = 0;
 
-									Status = sl_Send(ClientSd_TCP, DEBUG_CMD_resp.Head,
+									i16Status = sl_Send(ClientSd_TCP, DEBUG_CMD_resp.Head,
 									                 DEBUG_CMD_resp.Head[4] + DEBUG_CMD_resp.Head[5] * 256, 0);
-									if (Status > 0) {
+									if (i16Status > 0) {
 										Message("\r\n success , DEBUG_CMD!");
 									} else {
 										Message("\r\n failed , DEBUG_CMD!");
@@ -2894,7 +2700,7 @@ void TCP_TASK()
 									Message("\r\n DEBUG_CMD成功!");
 									DEBUG_CMD_resp.ready = 0;
 								} else {
-									Status = sl_Send(ClientSd_TCP, SendBuff_Mcu,
+									i16Status = sl_Send(ClientSd_TCP, SendBuff_Mcu,
 									                 SendBuff_Mcu[8] + SendBuff_Mcu[9] * 256, 0);
 									Message("\r\n 等待校准数据超时!");
 								}
@@ -2929,7 +2735,8 @@ _i16 AddrSize = 0;
 void UDP_TASK()
 {
 	unsigned char serviceType = 0xff; unsigned char messageType = 0xff;
-	unsigned int crcValue; int length; int i; int j; _i16 recv_Length;
+	unsigned int crcValue; int length; int i; int j; 
+	_i16 recv_Length;
 	SlSockAddrIn_t Addr_UDP_TMP; unsigned char *tmpP1, *tmpP2;
 	int time_now_second_from_1970;
 	/*
@@ -3323,8 +3130,6 @@ void WRITE_FILE_TASK()
 					UARTCharPut(UARTA1_BASE, temp[i]);
 				}
 				UART1_STATE = 0;
-
-
 				UART1_STATE = 1;
 				UART_PRINT("\r\n文件长度:%d ,已写文件长度:%d , 总包数:%d 第%d包 , packet length = %d , CRC 值 = %x",
 				           need_receive_file_length, FileSendLength_Inc, totalPackage, send_pack_count,

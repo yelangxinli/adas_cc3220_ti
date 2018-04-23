@@ -61,6 +61,9 @@ int32_t printHelpUsage(void *arg);
 int32_t initAppVariables();
 int32_t sem_wait_timeout(sem_t *sem, uint32_t Timeout);
 void   *MainThread(void *arg);
+void gettime(unsigned int second);
+int calc_sec1970(int Y, int M, int D, int h, int m, int s);
+
 
 #endif //_GETTIME_H_
 

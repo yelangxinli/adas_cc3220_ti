@@ -1322,51 +1322,23 @@ void setSSID()
 	sl_NetCfgGet(SL_NETCFG_MAC_ADDRESS_GET, &ConfigOpt, &macAddressLen,
 	             (_u8 *)macAddressVal);
 
-	if (((macAddressVal[0] & 0x0f) <= 9) && ((macAddressVal[0] & 0x0f) >= 0)) {
-		name[11] = (macAddressVal[0] & 0x0f) + 48;
-	} else {
-		name[11] = (macAddressVal[0] & 0x0f) + 64;
-	}
+	_u8 i=0,j=0,tmpVal=0,u8AdjustValue=0;
 
-	if ((((macAddressVal[0] >> 4) & 0x0f) <= 9)
-	    && (((macAddressVal[0] >> 4) & 0x0f) >= 0)) {
-		name[12] = ((macAddressVal[0] >> 4) & 0x0f) + 48;
-	} else {
-		name[12] = ((macAddressVal[0] >> 4) & 0x0f) + 64;
+	for(i=15,j=0;i<18-1;i++){
+		tmpVal=macAddressVal[i-15]>>(4*j);//j=0|1,
+		if (((tmpVal & 0x0f) <= 9) && ((tmpVal & 0x0f) >= 0)){
+			u8AdjustValue='0'-0;
+		}else{
+			u8AdjustValue='A'-10;
+		}
+		name[i] = (tmpVal& 0x0f) +u8AdjustValue;
+		j= j?0:1;
 	}
-
-	if (((macAddressVal[2] & 0x0f) <= 9) && ((macAddressVal[2] & 0x0f) >= 0)) {
-		name[13] = (macAddressVal[2] & 0x0f) + 48;
-	} else {
-		name[13] = (macAddressVal[2] & 0x0f) + 64;
-	}
-
-	if ((((macAddressVal[2] >> 4) & 0x0f) <= 9)
-	    && (((macAddressVal[2] >> 4) & 0x0f) >= 0)) {
-		name[14] = ((macAddressVal[2] >> 4) & 0x0f) + 48;
-	} else {
-		name[14] = ((macAddressVal[2] >> 4) & 0x0f) + 64;
-	}
-
-	if (((macAddressVal[4] & 0x0f) <= 9) && ((macAddressVal[4] & 0x0f) >= 0)) {
-		name[15] = (macAddressVal[4] & 0x0f) + 48;
-	} else {
-		name[15] = (macAddressVal[4] & 0x0f) + 64;
-	}
-
-	if ((((macAddressVal[4] >> 4) & 0x0f) <= 9)
-	    && (((macAddressVal[4] >> 4) & 0x0f) >= 0)) {
-		name[16] = ((macAddressVal[4] >> 4) & 0x0f) + 48;
-	} else {
-		name[16] = ((macAddressVal[4] >> 4) & 0x0f) + 64;
-	}
-
 	if (Status = sl_WlanSet(SL_WLAN_CFG_AP_ID, SL_WLAN_AP_OPT_SSID, 18, name)) {
 		UART_PRINT("\r\n can not set ssid!");
 	} else {
 		Status = sl_Stop(0);
 		sl_Start(NULL, NULL, NULL);
 	}
-	
 }
 
