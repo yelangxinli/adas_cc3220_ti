@@ -1261,6 +1261,7 @@ int Network(void *arg)//wifi with device
 															Ret_UDP_Send = sl_SendTo(Sd_UDP, SendBuff2APP,
 															                         SendBuff2APP[4] + SendBuff2APP[5] * 256, 0, (SlSockAddr_t *)&Addr_UDP[i],
 															                         sizeof(SlSockAddr_t));
+
 															if (Ret_UDP_Send < 0) {
 																Message("\r\n 报警上传失败!");
 															} else {
@@ -1540,6 +1541,7 @@ void TCP_TASK()
 	unsigned int crcValue = 0; unsigned int pos = 0; int32_t         nonBlocking;
 	struct SlTimeval_t TimeVal;
 	unsigned int File_Length = 0; SlSockAddrIn_t Addr_UDP_TMP;
+	Message("\r\nstart TCP TASK 2");
 	AddrSize = sizeof(SlSockAddrIn_t);
 	//Message("\r\n tcp_task begin!");
 	Addr_TCP.sin_family = SL_AF_INET;
@@ -1550,24 +1552,27 @@ void TCP_TASK()
 	TimeVal.tv_usec = 0; // Microseconds. 10000 microseconds resolution
 	//创建TCP socket
 	while (TCP_RUN_Flag == 0) {
-		vTaskDelay(20);
+		Message("\r\nwait TCP RUN");
+		vTaskDelay(1000);
 	}
+	Message("\r\nstart TCP TASK 1");
 	while (1) {
 		Sd = sl_Socket(SL_AF_INET, SL_SOCK_STREAM, 0);
 		if (Sd < 0) {
-			al_printf("\r\n error , can not create TCP socket! ");
-			continue;
+			Message("\r\n error , can not create TCP socket! ");
+			//continue;
 		} else {
-			al_printf("\r\n create TCP socket success!");
+			Message("\r\n create TCP socket success!");
 		}
-		i16Status = sl_Bind(Sd, (SlSockAddr_t *)&Addr_TCP, sizeof(SlSockAddrIn_t));
-		if (i16Status) {
+
+
+		Status = sl_Bind(Sd, (SlSockAddr_t *)&Addr_TCP, sizeof(SlSockAddrIn_t));
+		if (Status) {
 			// error
-			al_printf("\r\n error ,bind TCP socket failed!");
-			sl_Close(Sd);
-			continue;
+			Message("\r\n error , bind TCP socket failed!");
+			//continue;
 		} else {
-			al_printf("\r\n sl_Bind , TCP socket success!");
+			Message("\r\n sl_Bind , TCP socket success!");
 		}
 
 		i16Status = sl_SetSockOpt(Sd, SL_SOL_SOCKET, SL_SO_RCVTIMEO, (_u8 *)&TimeVal,
@@ -1575,7 +1580,7 @@ void TCP_TASK()
 		if (i16Status) {
 			Message("\r\n error , set rev time out failed");
 		} else {
-			//Message("\r\n set rev time out success");
+			Message("\r\n set rev time out success");
 		}
 		i16Status = sl_Listen(Sd, 1);
 		if (i16Status) {
@@ -1641,6 +1646,7 @@ void TCP_TASK()
 							SendBuff_Mcu[0] = SendBuff_Mcu[1] = SendBuff_Mcu[2] = SendBuff_Mcu[3] = 0xcc;
 							SendBuff_Mcu[8] = (16 + 76) % 256; SendBuff_Mcu[9] = (16 + 76) / 256; //消息长度
 							SendBuff_Mcu[10] = RecvBuff_Tcp[10]; SendBuff_Mcu[11] = RecvBuff_Tcp[11];
+
 							//TLV ， TP_FILE_PARA
 							SendBuff_Mcu[16] = TP_FILE_PARA_ID; SendBuff_Mcu[17] = 0;       //Type
 							SendBuff_Mcu[18] = 76; SendBuff_Mcu[19] = 0;       //Length
@@ -1669,17 +1675,20 @@ void TCP_TASK()
 							}
 							UART1_STATE = 0;
 							while (1) {
+								Message("\r\nwait for comm resp 0");
 								//串口回复
-								times = 0;
+								times = 0;你好
 								while (File_Upload_Ctrl.FileDataUpLoad_Flag != 1) { //没有数据要上传，等待
 									times ++;
-									if (times >= 500) {
+									if (times >= 50) {
 										break;
 									}
 									vTaskDelay(100);
 								}
+								Message("\r\nwait for comm resp 1");
 								if (File_Upload_Ctrl.FileDataUpLoad_Flag == 1) {
 									File_Upload_Ctrl.FileDataUpLoad_Flag = 0;            //上传
+
 
 									//Message("文件内容:");
 									unsigned char *temp = File_Upload_Ctrl.FILE_READ_RESP;
@@ -1696,11 +1705,13 @@ void TCP_TASK()
 									}
 									break;
 								}
-								if (times >= 180) {
+								Message("\r\nwait for comm resp 2");
+								if (times >= 50) {
 									File_Upload_Ctrl.FileDataUpLoad_Flag = 0;
 									File_Upload_Ctrl.UpLoad_Over = 0;
 									break;
 								}
+								Message("\r\nwait for comm resp 3");
 							}
 							receiveState = 1;
 							break;
@@ -2042,6 +2053,7 @@ void TCP_TASK()
 							}
 
 							Config_timeUpdateFlag = 1;
+							UART_PRINT("\r\nConfig_timeUpdateFlag = %d", Config_timeUpdateFlag);
 							break;
 						default :
 							break;
@@ -2094,29 +2106,29 @@ void TCP_TASK()
 							}
 							*/
 
-
+							/*
 							unsigned char *temp = RecvBuff_Tcp;
 							Message("\n\r请求报警统计报文:");
-							for (int i = 0; i < RecvBuff_Tcp[4] + RecvBuff_Tcp[5] * 256 ;
-							     i++) { //头 16 + TLV 86 + 文件长度 Status - 72 -16
-								UART_PRINT("%02x ", temp[i]);
+							for(int i =0; i< RecvBuff_Tcp[4] + RecvBuff_Tcp[5]*256 ;i++)        //头 16 + TLV 86 + 文件长度 Status - 72 -16
+							{
+							  UART_PRINT("%02x ",temp[i]);
 							}
-
+							*/
 
 							static unsigned int Date_Index;
-							//unsigned char *P_Date_Index = &RecvBuff_Tcp[20];
-							//Date_Index = *P_Date_Index;
-
-
+							unsigned char *P_Date_Index = &RecvBuff_Tcp[20];
+							Date_Index = *P_Date_Index;
+							UART_PRINT("\r\nBCD码为%x", Date_Index);
 							//将BCD码转成十进制数据
 							Date_Index = (RecvBuff_Tcp[20] & 0x0f) + ((RecvBuff_Tcp[20] & 0xf0) >> 4) * 10
 							             + ((RecvBuff_Tcp[21] & 0x0f)) * 100 + ((RecvBuff_Tcp[21] & 0xf0) >> 4) * 1000
 							             + ((RecvBuff_Tcp[22] & 0x0f)) * 10000 + ((RecvBuff_Tcp[22] & 0xf0) >> 4) *
 							             100000 + ((RecvBuff_Tcp[23] & 0x0f)) * 1000000 + ((RecvBuff_Tcp[23] & 0xf0) >>
 							                     4) * 10000000;
-
+							UART_PRINT("         ，请求%d天报警统计", Date_Index);
 							if (Date_Index <= 1000) {
 								if (Date_Index == 0) {
+									UART_PRINT("\r\n回复当天报警统计数据");
 									//打包
 									WARNING_DAY_STAT_resp.head[0] = WARNING_DAY_STAT_resp.head[1] =
 									                                    WARNING_DAY_STAT_resp.head[2] = WARNING_DAY_STAT_resp.head[3] = 0xaa;
@@ -2170,6 +2182,7 @@ void TCP_TASK()
 									//UART1_STATE = 0;
 								} else {
 									if (Date_Index < Statistics_FileList_Num) {
+										UART_PRINT("\r\n回复前%d天报警统计数据", Date_Index);
 										//打包
 										WARNING_DAY_STAT_resp.head[0] = WARNING_DAY_STAT_resp.head[1] =
 										                                    WARNING_DAY_STAT_resp.head[2] = WARNING_DAY_STAT_resp.head[3] = 0xaa;
@@ -2222,6 +2235,8 @@ void TCP_TASK()
 											FileName[j] = Statistics_FileList[Date_Index][j];
 										}
 										FileName[10] = '\0';
+										UART_PRINT("     ，打开文件%s", FileName);
+
 
 										long FileHandle = sl_FsOpen(FileName, SL_FS_READ, &Token);
 										if (FileHandle >= 0) {
@@ -2248,6 +2263,7 @@ void TCP_TASK()
 											UART_PRINT("%02x ", temp[i]);
 										}
 									} else {
+										UART_PRINT("\r\n结束统计报文会话");
 										//打包
 										WARNING_DAY_STAT_resp.head[0] = WARNING_DAY_STAT_resp.head[1] =
 										                                    WARNING_DAY_STAT_resp.head[2] = WARNING_DAY_STAT_resp.head[3] = 0xaa;
@@ -2412,7 +2428,7 @@ void TCP_TASK()
 							while (DVR_FILE_LIST_resp.DVR_FILE_LIST_RES_RDY != 1) {
 								Message("\r\n TCP 01!");
 								times++;
-								if (times >= 480) {
+								if (times >= 120) {
 									break;
 								}
 								vTaskDelay(50);
@@ -2753,6 +2769,7 @@ void UDP_TASK()
 	  }*/
 	while (1) {
 		while (UDP_RUN_Flag == 0) {
+			Message("\r\nwait UDP TASK");
 			vTaskDelay(20);
 		}
 

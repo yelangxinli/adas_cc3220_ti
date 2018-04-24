@@ -1,4 +1,5 @@
 #include <ti/drivers/net/wifi/netapp.h>
+#include "uart_term.h"
 //Service type
 #define NO_SERVICE 			0x00
 #define SERVICE_FILE		        0x01
@@ -63,7 +64,7 @@ static WARN_DAY_STAT WARN_DAY_STAT_TODAY;
 static WARN_DAY_STAT WARN_DAY_STAT_RESP;
 unsigned char *p_WARN_DAY_STAT_TODAY = WARN_DAY_STAT_TODAY.head;
 unsigned char *p_WARN_DAY_STAT_RESP = WARN_DAY_STAT_RESP.head;
-
+int test_count = 0;
 struct eventRecord {
 	double longitude;
 	double latitude;
@@ -294,6 +295,8 @@ void takePhoto()
 void saveDayStat()
 {
 	unsigned char FileName[10]; unsigned long ulToken; unsigned long lRetVal;
+	long FileHandle; unsigned char Sat_buf[24 * 32]; unsigned char *temp; int i;
+	unsigned long Token;
 	FileName[0] = ((tm.year % 100) / 10) + '0';
 	FileName[1] = (tm.year % 10) + '0'; //年
 	FileName[2] = ((tm.month % 100) / 10) + '0';
@@ -313,10 +316,25 @@ void saveDayStat()
 		if (lRetVal < 0) {
 			Message("\r\n 统计文件写入失败!");
 		}
+		//else
+		//Message("\r\n 统计文件写入成功!");
 	}
 	lRetVal = sl_FsClose(lFileHandle, 0, 0, 0);
 	if (lRetVal < 0) {
 		Message("\r\n 统计文件关闭失败!");
+	} else {
+		Message("\r\n 统计文件关闭成功,并重新打开文件,文件内容为：\r\n");
+		FileHandle = sl_FsOpen(FileName, SL_FS_READ, &Token);
+		if (FileHandle >= 0) {
+			lRetVal = sl_FsRead(FileHandle, 0, Sat_buf, sizeof(Sat_buf));
+			if ((lRetVal >= 0) && (lRetVal == 24 * 32)) {
+				temp = Sat_buf;
+				for (i = 0; i < lRetVal; i++) {
+					UART_PRINT("%02x ", temp[i]);
+				}
+			}
+			sl_FsClose(FileHandle, 0, 0, 0);
+		}
 	}
 }
 
@@ -327,7 +345,7 @@ void saveWarnStat()
 	}
 	//saveMonthStat();
 }
-static int count = 1000;
+int check_count = 1000;
 void dealWarning(char *buf, int len)
 {
 	char *warnData;
@@ -365,16 +383,15 @@ void dealWarning(char *buf, int len)
 	}
 
 	//send to dvr every 4 messages
-	if (checkTakePhoto(warnData) && ((count % 4) == 0)) {
+	if (checkTakePhoto(warnData) && ((check_count % 4) == 0)) {
 		takePhoto();
 	}
 
-
-	if (count > 200) {
+	if (check_count > 200) {
 		saveWarnStat();
-		count = 0;
+		check_count = 0;
 	}
-	count++;
+	check_count++;
 }
 
 
