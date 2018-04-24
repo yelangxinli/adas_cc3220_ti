@@ -26,7 +26,7 @@ UART_Handle InitTerm(void);
 
 int Report(const char *pcFormat, ...);
 
-int TrimSpace(char * pcInput);
+int TrimSpace(char *pcInput);
 
 int GetCmd(char *pcBuffer, unsigned int uiBufLen);
 

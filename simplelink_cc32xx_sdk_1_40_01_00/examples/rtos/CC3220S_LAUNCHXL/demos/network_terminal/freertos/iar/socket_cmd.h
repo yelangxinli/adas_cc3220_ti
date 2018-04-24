@@ -36,11 +36,10 @@
 #include <stdint.h>
 #include <ti/drivers/net/wifi/simplelink.h>
 
-typedef union
-{
-    uint32_t    ipv4;       /* Ipv4 Address */
-    uint8_t     ipv6[16];   /* Ipv6 Address */
-}ip_t;
+typedef union {
+	uint32_t    ipv4;       /* Ipv4 Address */
+	uint8_t     ipv6[16];   /* Ipv6 Address */
+} ip_t;
 
 /* Function prototypes */
 

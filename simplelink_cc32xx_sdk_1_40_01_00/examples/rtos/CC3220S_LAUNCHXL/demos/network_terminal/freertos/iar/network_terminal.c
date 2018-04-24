@@ -895,15 +895,16 @@ void PrintFileListProperty(_u16 prop)
 
 int Network(void *arg)//wifi with device
 {
-	unsigned char serviceType = 0xff, messageType = 0xff; 
-	_i16 Ret_UDP_Send = 0,Sd_UDP_TMP, recv_Length = 0;
-	unsigned char *temp; 
+	unsigned char serviceType = 0xff, messageType = 0xff;
+	_i16 Ret_UDP_Send = 0, Sd_UDP_TMP, recv_Length = 0;
+	unsigned char *temp;
 	int length = 0, i = 0;
-	unsigned int FileLength = 0, crcValue,count = 0, while_count = 0; 
-	unsigned int second_from_1970_1_1, year = 0, month = 0, day = 0, hour, minute, second;
+	unsigned int FileLength = 0, crcValue, count = 0, while_count = 0;
+	unsigned int second_from_1970_1_1, year = 0, month = 0, day = 0, hour, minute,
+	                                   second;
 	unsigned long ulToken;
 	SlSockAddrIn_t Addr_UDP_TMP;
-	
+
 	RestartSimplink();
 
 	//WriteFileToDevice(&ulToken);
@@ -1276,7 +1277,7 @@ int Network(void *arg)//wifi with device
 										case MSG_WARNING_DAY_STAT_RESP:
 											break;
 										}
-									}else if (serviceType == SERVICE_HEARTBEAT) {      //心跳服务
+									} else if (serviceType == SERVICE_HEARTBEAT) {      //心跳服务
 										Message("\r\n MCU心跳服务!");
 									} else if (serviceType == SERVICE_CMD) {          //命令服务
 										Message("\r\n MCU命令服务!");
@@ -1529,7 +1530,7 @@ void TCP_TASK()
 	static unsigned int month;
 	static unsigned int day;
 
-	_i16  i16Status=0;
+	_i16  i16Status = 0;
 	int receiveState; unsigned char serviceType = 0xff;
 	unsigned char messageType = 0xff;
 	_i16 recv_Length = 0;
@@ -1563,14 +1564,14 @@ void TCP_TASK()
 		if (i16Status) {
 			// error
 			al_printf("\r\n error ,bind TCP socket failed!");
-			sl_Close(Sd );
+			sl_Close(Sd);
 			continue;
 		} else {
 			al_printf("\r\n sl_Bind , TCP socket success!");
 		}
 
 		i16Status = sl_SetSockOpt(Sd, SL_SOL_SOCKET, SL_SO_RCVTIMEO, (_u8 *)&TimeVal,
-		                       sizeof(TimeVal));
+		                          sizeof(TimeVal));
 		if (i16Status) {
 			Message("\r\n error , set rev time out failed");
 		} else {
@@ -1600,15 +1601,15 @@ void TCP_TASK()
 					i16Status = sl_Recv(ClientSd_TCP, RecvBuff_Tcp, 4096, SL_MSG_DONTWAIT);
 				} else {
 					i16Status = sl_Recv(ClientSd_TCP, RecvBuff_Tcp, 4096 - receive_Buf_index,
-					                 SL_MSG_DONTWAIT);
+					                    SL_MSG_DONTWAIT);
 				}
 				//MAP_UARTIntEnable(UARTA1_BASE,UART_INT_RX);
 				if ((SL_ERROR_BSD_EAGAIN == i16Status)) {
 					//need debug
-					UART_PRINT("L:%d",__LINE__);//need_handle---------------------
+					UART_PRINT("L:%d", __LINE__); //need_handle---------------------
 					continue;
-				} else if(i16Status < 0) {
-					UART_PRINT("L:%d",__LINE__);//need_handle---------------------
+				} else if (i16Status < 0) {
+					UART_PRINT("L:%d", __LINE__); //need_handle---------------------
 					receiveState = 1;
 					break;
 				} else {
@@ -1689,7 +1690,7 @@ void TCP_TASK()
 									}
 
 									i16Status = sl_Send(ClientSd_TCP, File_Upload_Ctrl.FILE_READ_RESP,
-									                 File_Upload_Ctrl.FileDataUpLoad_Length, 0);
+									                    File_Upload_Ctrl.FileDataUpLoad_Length, 0);
 									if (File_Upload_Ctrl.UpLoad_Over == 1) {
 										File_Upload_Ctrl.UpLoad_Over = 0;
 									}
@@ -1817,7 +1818,8 @@ void TCP_TASK()
 								} else if (receive_Buf_index == 0) { //后续包，头
 
 									//文件内容
-									for (int i = 0; i < i16Status ; i++, receive_Buf_index++, received_file_length++) {
+									for (int i = 0; i < i16Status ;
+									     i++, receive_Buf_index++, received_file_length++) {
 										FileFollowPackage.Data[receive_Buf_index] = RecvBuff_Tcp[i];
 									}
 
@@ -1841,7 +1843,8 @@ void TCP_TASK()
 									recive_file_is_finished = false;
 								} else { //后续包尾
 									//文件内容
-									for (int i = 0; i < i16Status ; i++, receive_Buf_index++, received_file_length++) {
+									for (int i = 0; i < i16Status ;
+									     i++, receive_Buf_index++, received_file_length++) {
 										FileFollowPackage.Data[receive_Buf_index] = RecvBuff_Tcp[i];
 									}
 
@@ -2422,7 +2425,7 @@ void TCP_TASK()
 							UART_PRINT("\n\rlength = %d,", length);
 							if (DVR_FILE_LIST_resp.DVR_FILE_LIST_RES_RDY == 1) {
 								i16Status = sl_Send(ClientSd_TCP, DVR_FILE_LIST_resp.head,
-								                 DVR_FILE_LIST_resp.head[4] + DVR_FILE_LIST_resp.head[5] * 256, 0);
+								                    DVR_FILE_LIST_resp.head[4] + DVR_FILE_LIST_resp.head[5] * 256, 0);
 								if (i16Status > 0) {
 									Message("\r\n success , return file list!");
 								} else {
@@ -2526,7 +2529,7 @@ void TCP_TASK()
 							//回复wifi
 							if (TEST_CMD_resp.Ready == 1) {
 								i16Status = sl_Send(ClientSd_TCP, TEST_CMD_resp.Head,
-								                 TEST_CMD_resp.Head[4] + TEST_CMD_resp.Head[5] * 256, 0);
+								                    TEST_CMD_resp.Head[4] + TEST_CMD_resp.Head[5] * 256, 0);
 								if (i16Status > 0) {
 									Message("\r\n success , resp test cmd!");
 								} else {
@@ -2579,7 +2582,7 @@ void TCP_TASK()
 
 							if (RESET_ME_resp.RESET_ME_RESP_rdy == 1) {
 								i16Status = sl_Send(ClientSd_TCP, RESET_ME_resp.Head,
-								                 RESET_ME_resp.Head[4] + RESET_ME_resp.Head[5] * 256, 0);
+								                    RESET_ME_resp.Head[4] + RESET_ME_resp.Head[5] * 256, 0);
 								if (i16Status > 0) {
 									Message("\r\n success , resp reset me cmd!");
 								} else {
@@ -2689,7 +2692,7 @@ void TCP_TASK()
 									UART1_STATE = 0;
 
 									i16Status = sl_Send(ClientSd_TCP, DEBUG_CMD_resp.Head,
-									                 DEBUG_CMD_resp.Head[4] + DEBUG_CMD_resp.Head[5] * 256, 0);
+									                    DEBUG_CMD_resp.Head[4] + DEBUG_CMD_resp.Head[5] * 256, 0);
 									if (i16Status > 0) {
 										Message("\r\n success , DEBUG_CMD!");
 									} else {
@@ -2701,7 +2704,7 @@ void TCP_TASK()
 									DEBUG_CMD_resp.ready = 0;
 								} else {
 									i16Status = sl_Send(ClientSd_TCP, SendBuff_Mcu,
-									                 SendBuff_Mcu[8] + SendBuff_Mcu[9] * 256, 0);
+									                    SendBuff_Mcu[8] + SendBuff_Mcu[9] * 256, 0);
 									Message("\r\n 等待校准数据超时!");
 								}
 							}
@@ -2735,7 +2738,7 @@ _i16 AddrSize = 0;
 void UDP_TASK()
 {
 	unsigned char serviceType = 0xff; unsigned char messageType = 0xff;
-	unsigned int crcValue; int length; int i; int j; 
+	unsigned int crcValue; int length; int i; int j;
 	_i16 recv_Length;
 	SlSockAddrIn_t Addr_UDP_TMP; unsigned char *tmpP1, *tmpP2;
 	int time_now_second_from_1970;

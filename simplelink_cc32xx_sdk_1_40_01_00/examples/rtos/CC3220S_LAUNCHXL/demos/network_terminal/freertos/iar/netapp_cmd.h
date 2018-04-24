@@ -45,8 +45,8 @@ int32_t mDNSAdvertiseCallback(void *arg);
 
 int32_t printmDNSAdvertiseUsage(void *arg);
 
-int32_t mDNSQueryCallback(void* arg);
+int32_t mDNSQueryCallback(void *arg);
 
-int32_t printmDNSQueryUsage(void* arg);
+int32_t printmDNSQueryUsage(void *arg);
 
 #endif /* __NETAPP_CMD_H__ */

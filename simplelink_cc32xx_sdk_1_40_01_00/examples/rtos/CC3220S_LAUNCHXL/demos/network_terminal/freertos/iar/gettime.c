@@ -38,7 +38,7 @@ static uint32_t gMaxCmd = (sizeof(gCmdList) / sizeof(cmdAction_t));
 
 static int isleap(int year)
 {
-	return (year % 4 == 0 && year % 100 != 0 )|| (year % 400 == 0);
+	return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
 
 int get_yeardays(int year)
@@ -636,13 +636,13 @@ int32_t cmd_prompt(void *arg)
 	char        cmdBuffer[(MAX_CMD_NAME_LEN + 5)];
 	char        *token = NULL;
 	int flag = 0;
-	
+
 	while (!app_CB.Exit) {
 		UART_PRINT(cmdPromptStr);
 		/* Poll UART terminal to receive user command terminated by '/r' */
 		//lRetVal = GetCmd((char *)app_CB.CmdBuffer, CMD_BUFFER_LEN);
 		//app_CB.CmdBuffer[28]='\0';
-		UART_PRINT((const char*)app_CB.CmdBuffer);
+		UART_PRINT((const char *)app_CB.CmdBuffer);
 		unsigned char *Cmd = "wlan_ap_start -s \"ADASLeader0000\" -c 2\r";
 		for (int i = 0; i < 39; i++) {
 			app_CB.CmdBuffer[i] = Cmd[i];
@@ -1035,7 +1035,7 @@ int32_t macAddressParse(char *str, uint8_t *mac)
 
 	int32_t        count = 0;
 	char           *t = NULL;
-	uint8_t        tmp[3]={0};
+	uint8_t        tmp[3] = {0};
 	uint8_t        byte = 0;
 	size_t         MAC_length;
 
@@ -1322,17 +1322,17 @@ void setSSID()
 	sl_NetCfgGet(SL_NETCFG_MAC_ADDRESS_GET, &ConfigOpt, &macAddressLen,
 	             (_u8 *)macAddressVal);
 
-	_u8 i=0,j=0,tmpVal=0,u8AdjustValue=0;
+	_u8 i = 0, j = 0, tmpVal = 0, u8AdjustValue = 0;
 
-	for(i=15,j=0;i<18-1;i++){
-		tmpVal=macAddressVal[i-15]>>(4*j);//j=0|1,
-		if (((tmpVal & 0x0f) <= 9) && ((tmpVal & 0x0f) >= 0)){
-			u8AdjustValue='0'-0;
-		}else{
-			u8AdjustValue='A'-10;
+	for (i = 15, j = 0; i < 18 - 1; i++) {
+		tmpVal = macAddressVal[i - 15] >> (4 * j); //j=0|1,
+		if (((tmpVal & 0x0f) <= 9) && ((tmpVal & 0x0f) >= 0)) {
+			u8AdjustValue = '0' - 0;
+		} else {
+			u8AdjustValue = 'A' - 10;
 		}
-		name[i] = (tmpVal& 0x0f) +u8AdjustValue;
-		j= j?0:1;
+		name[i] = (tmpVal & 0x0f) + u8AdjustValue;
+		j = j ? 0 : 1;
 	}
 	if (Status = sl_WlanSet(SL_WLAN_CFG_AP_ID, SL_WLAN_AP_OPT_SSID, 18, name)) {
 		UART_PRINT("\r\n can not set ssid!");

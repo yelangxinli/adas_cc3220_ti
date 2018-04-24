@@ -37,20 +37,20 @@
 #include <ti/drivers/net/wifi/simplelink.h>
 
 #define RET_ON_ERROR(x)\
-                                if(x < 0) \
-                                {\
-                                    return x;\
-                                }
+	if(x < 0) \
+	{\
+		return x;\
+	}
 
 #define MSEC_SLEEP(x)\
-                                if((x * 1000) >= 1000000)\
-                                {\
-                                    sleep(x /1000);\
-                                }\
-                                else\
-                                {\
-                                    usleep(1000*x);\
-                                }
+	if((x * 1000) >= 1000000)\
+	{\
+		sleep(x /1000);\
+	}\
+	else\
+	{\
+		usleep(1000*x);\
+	}
 
 #define CW_LOW_TONE                                 (-25)
 #define CW_HIGH_TONE                                (25)
@@ -90,78 +90,73 @@
 
 /* Types */
 
-typedef enum
-{
+typedef enum {
 
-    TxMode_Continues         = 1,
-    TxMode_Packetized        = 2,
-    TxMode_CW                = 3,
-    TxMode_MaxRadioTxMode    = 4
-}TxMode;
+	TxMode_Continues         = 1,
+	TxMode_Packetized        = 2,
+	TxMode_CW                = 3,
+	TxMode_MaxRadioTxMode    = 4
+} TxMode;
 
-typedef enum
-{
-    Channel_1    = 1,
-    Channel_2    = 2,
-    Channel_3    = 3,
-    Channel_4    = 4,
-    Channel_5    = 5,
-    Channel_6    = 6,
-    Channel_7    = 7,
-    Channel_8    = 8,
-    Channel_9    = 9,
-    Channel_10   = 10,
-    Channel_11   = 11,
-    Channel_12   = 12,
-    Channel_13   = 13,
-    Channel_Max  = 14
-}Channel;
+typedef enum {
+	Channel_1    = 1,
+	Channel_2    = 2,
+	Channel_3    = 3,
+	Channel_4    = 4,
+	Channel_5    = 5,
+	Channel_6    = 6,
+	Channel_7    = 7,
+	Channel_8    = 8,
+	Channel_9    = 9,
+	Channel_10   = 10,
+	Channel_11   = 11,
+	Channel_12   = 12,
+	Channel_13   = 13,
+	Channel_Max  = 14
+} Channel;
 
-typedef enum
-{
+typedef enum {
 
-    PowerLevel_HighGainStep_7 = 0,
-    PowerLevel_HighGainStep_6 = 1,
-    PowerLevel_HighGainStep_5 = 2,
-    PowerLevel_HighGainStep_4 = 3,
-    PowerLevel_HighGainStep_3 = 4,
-    PowerLevel_HighGainStep_2 = 5,
-    PowerLevel_HighGainStep_1 = 6,
-    PowerLevel_HighGainStep_0 = 7,
-    PowerLevel_MidGainStep_3  = 8,
-    PowerLevel_MidGainStep_2  = 9,
-    PowerLevel_MidGainStep_1  = 10,
-    PowerLevel_MidGainStep_0  = 11,
-    PowerLevel_LowGainStep_3  = 12,
-    PowerLevel_LowGainStep_2  = 13,
-    PowerLevel_LowGainStep_1  = 14,
-    PowerLevel_LowGainStep_0  = 15,
-    PowerLevel_MaxPowerLevel  = 16
-}PowerLevel;
+	PowerLevel_HighGainStep_7 = 0,
+	PowerLevel_HighGainStep_6 = 1,
+	PowerLevel_HighGainStep_5 = 2,
+	PowerLevel_HighGainStep_4 = 3,
+	PowerLevel_HighGainStep_3 = 4,
+	PowerLevel_HighGainStep_2 = 5,
+	PowerLevel_HighGainStep_1 = 6,
+	PowerLevel_HighGainStep_0 = 7,
+	PowerLevel_MidGainStep_3  = 8,
+	PowerLevel_MidGainStep_2  = 9,
+	PowerLevel_MidGainStep_1  = 10,
+	PowerLevel_MidGainStep_0  = 11,
+	PowerLevel_LowGainStep_3  = 12,
+	PowerLevel_LowGainStep_2  = 13,
+	PowerLevel_LowGainStep_1  = 14,
+	PowerLevel_LowGainStep_0  = 15,
+	PowerLevel_MaxPowerLevel  = 16
+} PowerLevel;
 
-typedef enum
-{
+typedef enum {
 
-    Preamble_longMode       = 0,
-    Preamble_shortMode      = 1,
-    Preamble_OFDMMode       = 2,
-    Preamble_N_MixedMode    = 3,
-    Preamble_GreenfieldMode = 4,
-    Preamble_MaxNumMode     = 5
-}Preamble;
+	Preamble_longMode       = 0,
+	Preamble_shortMode      = 1,
+	Preamble_OFDMMode       = 2,
+	Preamble_N_MixedMode    = 3,
+	Preamble_GreenfieldMode = 4,
+	Preamble_MaxNumMode     = 5
+} Preamble;
 
-typedef enum
-{
+typedef enum {
 
-    DataPattern_all_0       = 0,
-    DataPattern_all_1       = 1,
-    DataPattern_incemental  = 2,
-    DataPattern_decremental = 3,
-    DataPattern_pn9         = 4,
-    DataPattern_pn15        = 5,
-    DataPattern_pn23        = 6,
-    DataPattern_max_num     = 7
-}DataPattern;
+	DataPattern_all_0       = 0,
+	DataPattern_all_1       = 1,
+	DataPattern_incemental  = 2,
+	DataPattern_decremental = 3,
+	DataPattern_pn9         = 4,
+	DataPattern_pn15        = 5,
+	DataPattern_pn23        = 6,
+	DataPattern_max_num     = 7
+} DataPattern;
 
 
 /* Function prototypes */
@@ -190,7 +185,7 @@ int32_t radioTool_RxStart(Channel RxChannel, uint32_t duration);
 
 int32_t radioTool_RxStop();
 
-int32_t radioTool_GetStats(SlWlanGetRxStatResponse_t* pStatResp);
+int32_t radioTool_GetStats(SlWlanGetRxStatResponse_t *pStatResp);
 
 int32_t radioTool_GetDeviceVersion(uint8_t *pDeviceVersion);
 
